@@ -41,6 +41,16 @@ export const planJourney = (origin, destination) =>
 export const getLiveBuses = () =>
   request("/live/buses?routes=700&routes=701", { cacheMs: 10_000 });
 
+// October 5, 2026: added getOperators, getTickets, getZones, and getLocations endpoints
+export const getOperators = (type) =>
+  request(`/operators${type ? `?type=${encodeURIComponent(type)}` : ""}`, { cacheMs: 300_000 });
+
+export const getTickets = () => request("/tickets", { cacheMs: 300_000 });
+
+export const getZones = () => request("/zones", { cacheMs: 300_000 });
+
+export const getLocations = () => request("/locations", { cacheMs: 300_000 });
+
 
 // Before June 2026 Old API endpoints
 // async function request(path) {

@@ -118,7 +118,7 @@ export default function Ticketing() {
                 <div className="ticket-operator-footer">
                   <div className="sustainability-note">
                     <span className="eco-icon">🌿</span>
-                    <span>{op.sustainabilityNote}</span>
+                    <span>{op.sustainability_note}</span>
                   </div>
                   <a
                     href={op.website}
