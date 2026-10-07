@@ -5,7 +5,7 @@ A responsive, installable web app that helps **University of Sunderland students
 It plans green journeys with live times and turn-by-turn voice directions, shows the 700/701 university buses moving live, lists today's official bus fares, and tracks the CO₂ each person saves.
 
 🌐 **Live app:** https://uos-sustainable-travel.vercel.app/
-🔌 **Backend API:** https://sustainable-travel-api.onrender.com ([sustainable-travel-backend](https://github.com/simon200ok/sustainable-travel-backend))
+🔌 **Backend API:** https://sustainable-travel-api.onrender.com ([backend link set as private (contact developer to discuss viewing possibility - simonkelvin2011@gmail.com)](simonkelvin2011@gmail.com))
 
 ---
 
@@ -108,7 +108,7 @@ sustainable-travel-frontend/
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 20.19 or later (required by Vite 7), npm and Git
-- The [backend](https://github.com/simon200ok/sustainable-travel-backend) running locally or a deployed backend URL
+- The backend running locally or a deployed backend URL
 
 ### Install
 
@@ -195,7 +195,7 @@ All Google Places and Routes calls go through the backend, so the server key is 
 - Saved places, saved trips and personal CO₂ stats stay on the user's device; no account is needed.
 - Google Maps content is not cached offline, in line with Google's terms.
 
-The backend adds rate limiting, input validation, a daily Google spending cap and its own security headers — see the [backend link set as private (contact developer to discuss viewing possibility)](simonkelvin2011@gmail.com).
+The backend adds rate limiting, input validation, a daily Google spending cap and its own security headers — see the [backend link set as private (contact developer to discuss viewing possibility - simonkelvin2011@gmail.com)](simonkelvin2011@gmail.com).
 
 ---
 
