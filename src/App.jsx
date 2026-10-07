@@ -10,6 +10,7 @@ import Ticketing from './pages/Ticketing';
 import Zones from './pages/Zones';
 import TravelMap from './pages/TravelMap';
 import Sustainability from './pages/Sustainability';
+import Privacy from './pages/Privacy';
 import { restoreReminders } from './lib/reminders';
 import { speak } from './lib/speech';
 import './components/AppBanners.css';
@@ -66,6 +67,7 @@ function App() {
             <Route path="/zones" element={<Zones />} />
             <Route path="/map" element={<TravelMap />} />
             <Route path="/sustainability" element={<Sustainability />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </ErrorBoundary>

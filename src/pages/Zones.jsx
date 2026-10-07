@@ -5,21 +5,22 @@ import { zonePricing } from '../data/travelData';
 
 import './Zones.css';
 
+// Titles follow the Nexus Metro and local rail fare zone map
 const zoneMeta = {
   'Zone A': {
-    label: 'Newcastle & Gateshead',
+    label: 'Newcastle & Gateshead city centres',
     highlight: false,
   },
   'Zone B': {
-    label: 'North Tyneside & Coast',
+    label: 'Inner Tyneside',
     highlight: false,
   },
   'Zone C': {
-    label: 'Sunderland & South Tyneside',
+    label: 'Sunderland, the Coast & Airport',
     highlight: true,
   },
   'Zone D': {
-    label: 'Airport & Western Corridor',
+    label: 'South East Northumberland',
     highlight: false,
   },
 };
@@ -52,8 +53,8 @@ export default function Zones() {
         <div className="container">
           <h1 className="page-title">Travel Zones</h1>
           <p className="page-desc">
-            Tyne and Wear Metro and multi-operator tickets are structured around travel zones.
-            Understanding zones helps you pick the right ticket and avoid overpaying.
+            Metro and Northumberland Line fares are based on four zones, A to D. Both University of
+            Sunderland campuses are in Zone C. Knowing your zones helps you pick the right ticket and avoid overpaying.
           </p>
         </div>
       </section>
@@ -97,7 +98,7 @@ export default function Zones() {
                       </div>
 
                       <div className="zone-info-group">
-                        <h4>Metro Stations</h4>
+                        <h4>Stations</h4>
                         <div className="zone-tags">
                           {zone.metroStations.map((station) => (
                             <span key={station} className="zone-tag zone-tag-station">
@@ -114,7 +115,8 @@ export default function Zones() {
               <div className="zone-pricing-section">
                 <h2 className="section-title">Metro Zone Pricing</h2>
                 <p className="section-subtitle">
-                  Metro fares depend on how many zones you travel through. Here are the standard Nexus Metro fares.
+                  Paper ticket prices depend on how many zones you travel through. With Pop Pay As You Go, any
+                  single journey costs at most £2.50 and a whole day at most £5.00. Nexus fares from 1 April 2026.
                 </p>
 
                 <div className="zone-pricing-table-wrapper">
@@ -122,9 +124,9 @@ export default function Zones() {
                     <thead>
                       <tr>
                         <th>Zones</th>
-                        <th>Single</th>
-                        <th>DaySaver</th>
-                        <th>Weekly</th>
+                        <th>Single (paper)</th>
+                        <th>Day ticket (paper)</th>
+                        <th>Pop Pay As You Go</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -132,8 +134,8 @@ export default function Zones() {
                         <tr key={i}>
                           <td className="zone-label-cell">{row.zones}</td>
                           <td>{row.single}</td>
-                          <td>{row.daySaver}</td>
-                          <td>{row.weekly}</td>
+                          <td>{row.day}</td>
+                          <td>{row.pop}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -141,29 +143,38 @@ export default function Zones() {
                 </div>
               </div>
 
+              <p className="zone-source">
+                Zones from the Nexus Metro and local rail fare zone map. Stations on a boundary count as either zone
+                and are shown in both, e.g. “Felling (A/B)”.{' '}
+                <a href="https://www.nexus.org.uk/metro/metro-maps" target="_blank" rel="noopener noreferrer">
+                  See the official zone map
+                </a>
+              </p>
+
               <div className="zone-tips">
                 <div className="zone-tip-card">
                   <span className="zone-tip-icon">🎓</span>
                   <h3>Student Zone Tip</h3>
                   <p>
-                    Most UoS students only need <strong>Zone C</strong> (Sunderland) for daily travel.
-                    If you commute from Newcastle, you'll need a 3-zone ticket covering Zones A, B, and C.
+                    Trips around Sunderland, including between City Campus and St Peter's, stay in <strong>Zone C</strong>.
+                    From Newcastle city centre (Zone A) you pass through Zone B, so you need an all-zones ticket —
+                    or tap with Pop Pay As You Go and pay no more than £2.50. If you're 21 or under, it's £1.
                   </p>
                 </div>
                 <div className="zone-tip-card">
                   <span className="zone-tip-icon">🔄</span>
                   <h3>Multi-Operator Passes</h3>
                   <p>
-                    The <strong>Network One</strong> ticket allows travel on Metro, most buses, and some rail services
-                    across multiple zones with a single ticket. Great value if you use mixed transport.
+                    The <strong>Transport North East Day Saver</strong> (£7.50) covers buses, Metro, the Shields Ferry
+                    and local rail across Tyne and Wear, Northumberland and County Durham — great value if you mix transport.
                   </p>
                 </div>
                 <div className="zone-tip-card">
                   <span className="zone-tip-icon">📱</span>
                   <h3>Pop Card</h3>
                   <p>
-                    Get a <strong>Pop Pay As You Go</strong> card from Nexus for convenient tap-and-go
-                    travel on Metro and participating buses. It automatically caps your daily spend.
+                    Tap in and out with a <strong>Pop Pay As You Go</strong> card on the Metro and the Northumberland Line.
+                    Fares are capped automatically at £2.50 a journey and £5.00 a day.
                   </p>
                 </div>
               </div>

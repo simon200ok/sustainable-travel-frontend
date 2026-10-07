@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { APIProvider, AdvancedMarker, Map, Polyline, useMap } from "@vis.gl/react-google-maps";
+import { APIProvider, AdvancedMarker, AdvancedMarkerAnchorPoint, Map, Polyline, useMap } from "@vis.gl/react-google-maps";
 import { MODE_META } from "../../lib/format";
 import { SUNDERLAND } from "../../lib/geo";
 import { boundsOf, decodePolyline, stepPath } from "../../lib/navigation";
+import UserLocationMarker from "./UserLocationMarker";
 
 const BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY;
 // Map IDs are created free in Google Cloud → Map Management; DEMO_MAP_ID is for local testing only
@@ -47,6 +48,24 @@ function FollowUser({ position, following, onUserPan, zoom }) {
   return null;
 }
 
+// Shows the user's own area when the page opens, and again whenever "My location" is pressed
+function CenterOnUser({ position, enabled, request }) {
+  const map = useMap();
+  const centredOnce = useRef(false);
+  const lastRequest = useRef(request);
+  useEffect(() => {
+    if (!map || !position) return;
+    const asked = request !== lastRequest.current;
+    lastRequest.current = request;
+    if (asked || (enabled && !centredOnce.current)) {
+      centredOnce.current = true;
+      map.panTo(position);
+      if ((map.getZoom() ?? 0) < 15) map.setZoom(16);
+    }
+  }, [map, position, enabled, request]);
+  return null;
+}
+
 function MapLayers({ layers }) {
   const map = useMap();
   const instances = useRef({});
@@ -86,6 +105,8 @@ export default function PlannerMap({
   destination,
   option,
   userPosition,
+  heading = null,
+  compass,
   navigating = false,
   following = true,
   onUserPan,
@@ -96,6 +117,7 @@ export default function PlannerMap({
   const inView = useInView(containerRef);
   const [loadError, setLoadError] = useState("");
   const [layers, setLayers] = useState({ transit: false, bicycling: false, traffic: false });
+  const [recentre, setRecentre] = useState(0);
 
   useEffect(() => {
     // Google calls this global when the browser key is rejected (wrong referrer, billing off, ...)
@@ -143,6 +165,7 @@ export default function PlannerMap({
           >
             <MapLayers layers={layers} />
             <FitToRoute points={routePoints} enabled={!navigating} />
+            <CenterOnUser position={userPosition} enabled={!navigating && !option} request={recentre} />
             {navigating && <FollowUser position={userPosition} following={following} onUserPan={onUserPan} zoom={17} />}
 
             {option?.steps?.map((step, i) => (
@@ -166,14 +189,34 @@ export default function PlannerMap({
                 </AdvancedMarker>
               ))}
             {userPosition && (
-              <AdvancedMarker position={userPosition} title="You are here" zIndex={1000}>
-                <span className="map-user-dot" aria-hidden="true" />
+              <AdvancedMarker
+                position={userPosition}
+                title="You are here"
+                zIndex={1000}
+                anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+              >
+                <UserLocationMarker heading={heading} />
               </AdvancedMarker>
             )}
           </Map>
         </APIProvider>
       ) : (
         <div className="planner-map-fallback" aria-hidden="true" />
+      )}
+
+      {!loadError && inView && (userPosition || compass?.needsPermission) && (
+        <div className="map-location-controls">
+          {compass?.needsPermission && userPosition && (
+            <button type="button" onClick={compass.requestPermission}>
+              🧭 Show my direction
+            </button>
+          )}
+          {userPosition && !navigating && (
+            <button type="button" onClick={() => setRecentre((n) => n + 1)} aria-label="Centre the map on my location">
+              ◎ My location
+            </button>
+          )}
+        </div>
       )}
 
       {!loadError && inView && (

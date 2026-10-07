@@ -1,0 +1,30 @@
+.privacy-body {
+  max-width: 760px;
+}
+
+.privacy-body h2 {
+  font-size: 1.15rem;
+  margin: 28px 0 8px;
+  color: var(--text-primary);
+}
+
+.privacy-body h2:first-child {
+  margin-top: 0;
+}
+
+.privacy-body p,
+.privacy-body li {
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.privacy-body ul {
+  padding-left: 20px;
+  margin-bottom: 8px;
+}
+
+.privacy-body a {
+  color: var(--uos-orange);
+  font-weight: 600;
+  text-decoration: underline;
+}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getLocations, planJourney } from "../../lib/api";
 import { getCurrentPosition, locationPermissionState } from "../../lib/geo";
+import { useDeviceHeading } from "../../hooks/useDeviceHeading";
 import { useImpact } from "../../hooks/useImpact";
 import { useLiveLocation } from "../../hooks/useLiveLocation";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
@@ -28,6 +29,7 @@ export default function JourneyPlanner() {
   const [inputsKey, setInputsKey] = useState(0);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState(null);
+  const [tracking, setTracking] = useState(false);
   const [result, setResult] = useState(null);
   const [selected, setSelected] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -38,7 +40,11 @@ export default function JourneyPlanner() {
   const [savedMsg, setSavedMsg] = useState("");
   const resultsRef = useRef(null);
 
-  const live = useLiveLocation(navigating);
+  // Keep following the user's position once they've shared it, so the map arrow moves with them
+  const live = useLiveLocation(navigating || tracking);
+  const compass = useDeviceHeading();
+  const gpsHeading = live.position?.speed > 0.7 && Number.isFinite(live.position?.heading) ? live.position.heading : null;
+  const heading = compass.heading ?? gpsHeading;
 
   const locate = useCallback(async () => {
     setLocating(true);
@@ -46,6 +52,7 @@ export default function JourneyPlanner() {
     try {
       const pos = await getCurrentPosition();
       setOrigin({ label: YOUR_LOCATION, lat: pos.lat, lng: pos.lng, isCurrent: true });
+      setTracking(true);
     } catch (code) {
       setLocationError(code);
     } finally {
@@ -141,7 +148,7 @@ export default function JourneyPlanner() {
   }
 
   const savablePlace = destination && !CAMPUS_PLACES.some((c) => c.label === destination.label) ? destination : null;
-  const userPosition = navigating ? live.position : origin?.isCurrent ? origin : null;
+  const userPosition = live.position ?? (origin?.isCurrent ? origin : null);
 
   if (navigating && selected) {
     return (
@@ -151,6 +158,8 @@ export default function JourneyPlanner() {
           destination={destination}
           option={selected}
           userPosition={live.position}
+          heading={heading}
+          compass={compass}
           navigating
           following={following}
           onUserPan={() => setFollowing(false)}
@@ -296,6 +305,8 @@ export default function JourneyPlanner() {
           destination={destination}
           option={selected}
           userPosition={userPosition}
+          heading={heading}
+          compass={compass}
           cycleParks={cycleParks}
           theme={theme}
         />

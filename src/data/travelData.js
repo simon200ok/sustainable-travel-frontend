@@ -101,10 +101,11 @@ export const zones = [
   },
 ];
 
+// Nexus "Mayor's Fares", in effect from 1 April 2026. Pop PAYG caps are the same for any number of zones.
 export const zonePricing = [
-  { zones: '1 Zone', single: '£1.90', daySaver: '£3.90', weekly: '£12.50' },
-  { zones: '2 Zones', single: '£2.80', daySaver: '£5.00', weekly: '£17.00' },
-  { zones: 'All Zones', single: '£3.60', daySaver: '£5.30', weekly: '£19.50' },
+  { zones: '1 Zone', single: '£3.20', day: '£4.80', pop: '£2.50 single · £5.00 day cap' },
+  { zones: '2 Zones', single: '£4.30', day: '£6.10', pop: '£2.50 single · £5.00 day cap' },
+  { zones: 'All Zones', single: '£5.10', day: '£7.00', pop: '£2.50 single · £5.00 day cap' },
 ];
 
 export const mapLocations = [

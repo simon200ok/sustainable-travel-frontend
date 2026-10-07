@@ -30,8 +30,9 @@ export default function Footer() {
             <h4>Quick Links</h4>
             <NavLink to="/ticketing">Ticketing & Prices</NavLink>
             <NavLink to="/zones">Travel Zones</NavLink>
-            <NavLink to="/map">Interactive Map</NavLink>
+            <NavLink to="/map">Live Map</NavLink>
             <NavLink to="/sustainability">Sustainability Tips</NavLink>
+            <NavLink to="/privacy">Privacy</NavLink>
           </div>
 
           <div className="footer-col">
@@ -50,7 +51,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} University of Sunderland Sustainability Team. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} University of Sunderland Developer Society. All rights reserved.</p>
         </div>
       </div>
     </footer>
