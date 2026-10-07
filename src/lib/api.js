@@ -4,44 +4,99 @@ if (!API_BASE_URL) {
   throw new Error("VITE_API_BASE_URL is not set");
 }
 
+const DEFAULT_TIMEOUT_MS = 15_000;
 const cache = new Map();
 
+export class ApiError extends Error {
+  constructor(message, status = 0) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+function friendlyMessage(status, serverMessage) {
+  if (status === 429) return "You're doing that a lot — please wait a moment and try again.";
+  if (status === 413) return "That request was too large.";
+  if (status >= 500 && !serverMessage) return "Our server is having a moment. Please try again shortly.";
+  return serverMessage || "Something went wrong. Please try again.";
+}
+
 async function request(path, options = {}) {
-  const { cacheMs = 0, method = "GET", body } = options;
+  const { cacheMs = 0, method = "GET", body, timeoutMs = DEFAULT_TIMEOUT_MS, signal } = options;
   const key = `${method}:${path}:${body ? JSON.stringify(body) : ""}`;
   const hit = cache.get(key);
 
   if (hit && Date.now() - hit.time < cacheMs) return hit.data;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new DOMException("Timeout", "TimeoutError")), timeoutMs);
+  signal?.addEventListener("abort", () => controller.abort(signal.reason), { once: true });
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    if (!navigator.onLine) throw new ApiError("You're offline. Check your connection and try again.");
+    if (err?.name === "TimeoutError" || controller.signal.reason?.name === "TimeoutError") {
+      throw new ApiError("The server took too long to respond. Please try again.");
+    }
+    throw new ApiError("Couldn't reach the server. Please try again shortly.");
+  } finally {
+    clearTimeout(timer);
+  }
 
   const json = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(json?.detail || json?.error || "Request failed");
+  if (!res.ok) {
+    const detail = typeof json?.detail === "string" ? json.detail : json?.error;
+    throw new ApiError(friendlyMessage(res.status, detail), res.status);
+  }
 
-  const data = json.data ?? json;
+  const data = json?.data ?? json;
   if (cacheMs) cache.set(key, { time: Date.now(), data });
   return data;
 }
 
 export const getHomeData = () => request("/home", { cacheMs: 60_000 });
 
-export const getPlaceSuggestions = (input) => 
-  request(`/journey/autocomplete?q=${encodeURIComponent(input)}`, { cacheMs: 300_000 });
+export function getPlaceSuggestions(input, { session, near, signal } = {}) {
+  const params = new URLSearchParams({ q: input });
+  if (session) params.set("session", session);
+  if (near) {
+    params.set("lat", near.lat.toFixed(4));
+    params.set("lng", near.lng.toFixed(4));
+  }
+  return request(`/journey/autocomplete?${params}`, { cacheMs: 300_000, signal, timeoutMs: 8_000 });
+}
+
+export function getPlace(placeId, { session } = {}) {
+  const params = session ? `?session=${encodeURIComponent(session)}` : "";
+  return request(`/journey/place/${encodeURIComponent(placeId)}${params}`, { cacheMs: 86_400_000 });
+}
 
 export const planJourney = (origin, destination) =>
   request("/journey/plan", {
     method: "POST",
     body: { origin, destination },
+    timeoutMs: 25_000,
   });
 
 export const getLiveBuses = () =>
-  request("/live/buses?routes=700&routes=701", { cacheMs: 10_000 });
+  request("/live/buses?routes=700&routes=701", { cacheMs: 10_000, timeoutMs: 10_000 });
 
-// October 5, 2026: added getOperators, getTickets, getZones, and getLocations endpoints
+export const getFares = () => request("/fares", { cacheMs: 300_000 });
+
+export const logGreenJourney = (mode, distanceMeters) =>
+  request("/impact/journeys", { method: "POST", body: { mode, distance_m: Math.round(distanceMeters) } });
+
+export const getCommunityImpact = () => request("/impact/summary", { cacheMs: 120_000 });
+
 export const getOperators = (type) =>
   request(`/operators${type ? `?type=${encodeURIComponent(type)}` : ""}`, { cacheMs: 300_000 });
 
@@ -50,72 +105,3 @@ export const getTickets = () => request("/tickets", { cacheMs: 300_000 });
 export const getZones = () => request("/zones", { cacheMs: 300_000 });
 
 export const getLocations = () => request("/locations", { cacheMs: 300_000 });
-
-
-// Before June 2026 Old API endpoints
-// async function request(path) {
-//   const res = await fetch(`${API_BASE_URL}${path}`, {
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//   });
-
-//   let json = null;
-
-//   try {
-//     json = await res.json();
-//   } catch {
-//     throw new Error(`Invalid JSON response from ${path}`);
-//   }
-
-//   if (!res.ok) {
-//     throw new Error(
-//       json?.detail ||
-//         json?.error ||
-//         json?.message ||
-//         `API request failed: ${res.status}`
-//     );
-//   }
-
-//   return json;
-// }
-
-// export async function getOperators(type) {
-//   const query = type ? `?type=${encodeURIComponent(type)}` : "";
-//   const json = await request(`/operators${query}`);
-//   return json.data ?? [];
-// }
-
-// export async function getOperator(operatorId) {
-//   const json = await request(`/operators/${operatorId}`);
-//   return json.data;
-// }
-
-// export async function getTickets() {
-//   const json = await request(`/tickets`);
-//   return json.data ?? [];
-// }
-
-// export async function getTicketsByOperator(operatorId) {
-//   const json = await request(`/tickets/operator/${operatorId}`);
-//   return json.data ?? [];
-// }
-
-// export async function getZones() {
-//   const json = await request(`/zones`);
-//   return json.data ?? [];
-// }
-
-// export async function getLocations() {
-//   const json = await request(`/locations`);
-//   return json.data ?? [];
-// }
-
-// export async function getNearbyLocations(lat, lng, radius = 5) {
-//   const json = await request(
-//     `/locations/nearby?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(
-//       lng
-//     )}&radius=${encodeURIComponent(radius)}`
-//   );
-//   return json.data ?? [];
-// }

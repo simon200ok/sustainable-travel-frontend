@@ -144,3 +144,138 @@
     gap: 12px;
   }
 }
+
+/* ── Live buses, layer toggles, campus switch ───────────────────────── */
+
+.map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.map-toolbar .map-legend {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+button.legend-item {
+  background: none;
+  padding: 2px 4px;
+  border-radius: 20px;
+  transition: opacity var(--transition);
+}
+
+.legend-item.legend-off {
+  opacity: 0.4;
+}
+
+.legend-item.legend-off .legend-label {
+  text-decoration: line-through;
+}
+
+.legend-dot-live {
+  background: var(--uos-navy-light);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.campus-switch {
+  display: flex;
+  border: 1px solid var(--uos-grey);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.campus-switch button {
+  background: var(--uos-white);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 10px 16px;
+}
+
+.campus-switch button + button {
+  border-left: 1px solid var(--uos-grey);
+}
+
+.campus-switch button:hover {
+  color: var(--uos-orange);
+}
+
+.live-status {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.live-status-error {
+  color: var(--uos-red);
+}
+
+.map-marker {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 3px solid white;
+}
+
+/* Smoothly glide buses between 15-second position updates */
+.live-bus-marker {
+  transition: transform 1.2s linear;
+}
+
+.leaflet-zoom-anim .live-bus-marker {
+  transition: none;
+}
+
+.live-bus {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.live-bus-route {
+  position: relative;
+  z-index: 2;
+  background: #0069FA;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.live-bus-arrow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.live-bus-arrow::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 10px solid #0069FA;
+}
+
+.cycle-count {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--uos-green);
+  font-weight: 600;
+}

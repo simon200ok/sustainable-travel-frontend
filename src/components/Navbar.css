@@ -144,3 +144,19 @@
     font-size: 1rem;
   }
 }
+
+.navbar-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .navbar-end {
+    gap: 6px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+}

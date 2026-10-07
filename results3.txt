@@ -1,0 +1,48 @@
+16:48:59.631 Running build in Washington, D.C., USA (East) – iad1
+16:48:59.633 Build machine configuration: 2 cores, 8 GB
+16:48:59.710 Cloning github.com/simon200ok/sustainable-travel-frontend (Branch: main, Commit: d209c90)
+16:48:59.712 Skipping build cache, deployment was triggered without cache.
+16:49:00.114 Cloning completed: 403.000ms
+16:49:00.783 Running "vercel build"
+16:49:00.944 Vercel CLI 62.1.0
+16:49:01.777 Installing dependencies...
+16:49:07.628 
+16:49:07.630 added 164 packages in 6s
+16:49:07.630 
+16:49:07.630 34 packages are looking for funding
+16:49:07.630   run `npm fund` for details
+16:49:07.631 npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+16:49:07.631 npm warn install-scripts   esbuild@0.27.3 (postinstall: node install.js)
+16:49:07.631 npm warn install-scripts
+16:49:07.631 npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+16:49:07.710 Running "npm run build"
+16:49:07.869 
+16:49:07.869 > sunderland-travel-hub@0.0.0 build
+16:49:07.869 > vite build
+16:49:07.869 
+16:49:08.172 vite v7.3.1 building client environment for production...
+16:49:08.283 transforming...
+16:49:10.081 ✓ 105 modules transformed.
+16:49:10.084 ✗ Build failed in 1.86s
+16:49:10.084 error during build:
+16:49:10.084 src/pages/Home.jsx (5:9): "getOperators" is not exported by "src/lib/api.js", imported by "src/pages/Home.jsx".
+16:49:10.085 file: /vercel/path0/src/pages/Home.jsx:5:9
+16:49:10.085 
+16:49:10.085 3: import {useMemo, useState } from 'react';
+16:49:10.085 4: import { Link } from 'react-router-dom';
+16:49:10.085 5: import { getOperators, getTickets } from '../lib/api';
+16:49:10.085             ^
+16:49:10.085 6: // import { mapOperator, mapTicket } from '../lib/mappers';
+16:49:10.085 7: import { useAsyncData } from '../hooks/useAsyncData';
+16:49:10.085 
+16:49:10.085     at getRollupError (file:///vercel/path0/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+16:49:10.086     at error (file:///vercel/path0/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+16:49:10.086     at Module.error (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:17040:16)
+16:49:10.086     at Module.traceVariable (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:17452:29)
+16:49:10.086     at ModuleScope.findVariable (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:15070:39)
+16:49:10.086     at FunctionScope.findVariable (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+16:49:10.086     at FunctionBodyScope.findVariable (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+16:49:10.087     at ReturnValueScope.findVariable (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+16:49:10.087     at FunctionBodyScope.findVariable (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+16:49:10.088     at Identifier.bind (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:5447:40)
+16:49:10.134 Error: Command "npm run build" exited with 1

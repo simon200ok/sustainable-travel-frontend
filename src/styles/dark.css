@@ -1,0 +1,72 @@
+/*
+ * Dark-mode fixes for existing pages.
+ * In dark mode --uos-white becomes a dark surface, so places that used it as a
+ * *text* colour on dark sections need an explicit light colour here.
+ */
+
+:root[data-theme="dark"] .hero,
+:root[data-theme="dark"] .page-title,
+:root[data-theme="dark"] .footer,
+:root[data-theme="dark"] .pledge-card,
+:root[data-theme="dark"] .zone-pricing-table thead,
+:root[data-theme="dark"] .filter-chip.active,
+:root[data-theme="dark"] .cta-content h2 {
+  color: var(--text-on-dark);
+}
+
+:root[data-theme="dark"] .brand-title {
+  color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .navbar-toggle span {
+  background: var(--text-primary);
+}
+
+/* Keep the UoS logo on a light tile so it stays legible */
+:root[data-theme="dark"] .navbar-logo,
+:root[data-theme="dark"] .footer-logo {
+  background: #f3f8fa;
+  border-radius: var(--radius-sm);
+}
+
+:root[data-theme="dark"] .page-header,
+:root[data-theme="dark"] .cta-card {
+  background: linear-gradient(135deg, #0A1020 0%, #0D1B3E 100%);
+}
+
+:root[data-theme="dark"] .tipmodal,
+:root[data-theme="dark"] .tipmodal-close {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .tipmodal-body {
+  color: var(--text-secondary);
+}
+
+/* Leaflet popups and controls */
+:root[data-theme="dark"] .leaflet-popup-content-wrapper,
+:root[data-theme="dark"] .leaflet-popup-tip,
+:root[data-theme="dark"] .leaflet-bar a {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .leaflet-container {
+  background: #0E1524;
+}
+
+/* Dim OpenStreetMap tiles so the map isn't a bright rectangle at night */
+:root[data-theme="dark"] .leaflet-tile-pane {
+  filter: brightness(0.75) contrast(1.1) saturate(0.85);
+}
+
+:root[data-theme="dark"] .page-desc {
+  color: #C9D2E1;
+}
+
+/* --uos-grey is a border colour in dark mode, too dim for footer text */
+:root[data-theme="dark"] .footer-brand p,
+:root[data-theme="dark"] .footer-desc {
+  color: #B4BFD1;
+}

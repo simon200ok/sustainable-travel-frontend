@@ -244,3 +244,43 @@
     gap: 12px;
   }
 }
+
+/* ── Live fares ─────────────────────────────────────────────────────── */
+
+.fares-notice {
+  margin-bottom: 24px;
+}
+
+.fares-updated {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--uos-green);
+  box-shadow: 0 0 0 3px var(--uos-green-light);
+  flex-shrink: 0;
+}
+
+.fares-empty {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 24px;
+}
+
+.fares-source {
+  margin-top: 24px;
+  font-size: 0.78rem;
+  color: var(--uos-grey-mid);
+}
+
+.inline-link {
+  color: var(--uos-orange);
+  font-weight: 600;
+  text-decoration: underline;
+}
