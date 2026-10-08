@@ -194,3 +194,7 @@
   font-weight: 600;
   text-decoration: underline;
 }
+
+.zone-report {
+  margin: -24px 0 32px;
+}

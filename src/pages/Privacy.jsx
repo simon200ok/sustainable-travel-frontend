@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import './Privacy.css';
 
 export default function Privacy() {
@@ -52,6 +53,13 @@ export default function Privacy() {
             total. It contains no name, account, device ID or location.
           </p>
 
+          <h2>Contact form</h2>
+          <p>
+            If you send us a message, we store your name, email address, topic and message so the admin team can read it
+            and reply. Only signed-in admins can see messages. They're deleted automatically after 12 months (messages
+            marked as spam after 30 days), or sooner if you ask us to delete them.
+          </p>
+
           <h2>Server logs</h2>
           <p>
             Like any website, our hosting providers record technical logs, including IP addresses, to keep the service
@@ -84,7 +92,8 @@ export default function Privacy() {
           <p>
             {/* Contact the team that runs this app, or the University of Sunderland's Data Protection Officer, if you have
             any questions about your data. */}
-            Contact the University of Sunderland Developer Society, if you have any questions about your data.
+            Contact the University of Sunderland Developer Society if you have any questions about your data, or to ask
+            us to delete a message you sent — use the <Link to="/contact?topic=privacy">contact form</Link>.
           </p>
         </div>
       </section>

@@ -1,4 +1,5 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -265,6 +266,10 @@ export default function TravelMap() {
                 ))}
             </MapContainer>
           </div>
+
+          <Link to="/contact?topic=travel-info" className="report-link">
+            🚩 Missing cycle parking or a wrong stop? Tell us
+          </Link>
 
           <div className="map-locations-grid">
             {campuses.map((loc) => (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -11,16 +11,21 @@ import Zones from './pages/Zones';
 import TravelMap from './pages/TravelMap';
 import Sustainability from './pages/Sustainability';
 import Privacy from './pages/Privacy';
+import Contact from './pages/Contact';
 import { restoreReminders } from './lib/reminders';
 import { speak } from './lib/speech';
 import './components/AppBanners.css';
+
+// The admin area is a separate download: ordinary visitors never load its code
+const AdminApp = lazy(() => import('./pages/admin/AdminApp'));
 
 function NotFound() {
   return (
     <div className="page-loading">
       <h1 className="section-title">Page not found</h1>
       <p>
-        <Link to="/" className="inline-link">Go to the journey planner</Link>
+        <Link to="/" className="inline-link">Go to the journey planner</Link> or{' '}
+        <Link to="/contact" className="inline-link">tell us about a broken link</Link>
       </p>
     </div>
   );
@@ -68,6 +73,15 @@ function App() {
             <Route path="/map" element={<TravelMap />} />
             <Route path="/sustainability" element={<Sustainability />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route
+              path="/admin/*"
+              element={
+                <Suspense fallback={<div className="page-loading"><span className="spinner" /> Loading admin…</div>}>
+                  <AdminApp />
+                </Suspense>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </ErrorBoundary>

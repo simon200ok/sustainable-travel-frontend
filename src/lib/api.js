@@ -105,3 +105,6 @@ export const getTickets = () => request("/tickets", { cacheMs: 300_000 });
 export const getZones = () => request("/zones", { cacheMs: 300_000 });
 
 export const getLocations = () => request("/locations", { cacheMs: 300_000 });
+
+export const sendContactMessage = (form) =>
+  request("/contact", { method: "POST", body: form, timeoutMs: 20_000 });

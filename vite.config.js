@@ -39,6 +39,8 @@ export default defineConfig(({ mode }) => {
         workbox: {
           navigateFallback: '/index.html',
           globPatterns: ['**/*.{js,css,html,ico,png,webp,svg}'],
+          // The admin area is never available offline
+          globIgnores: ['**/AdminApp-*'],
           cleanupOutdatedCaches: true,
           runtimeCaching: [
             {

@@ -168,6 +168,9 @@ Open http://localhost:5173.
 | `/zones` | Travel zones and zone pricing |
 | `/map` | Live 700/701 buses, cycle parking and transport links |
 | `/sustainability` | Sustainable travel information and tips |
+| `/contact` | Contact us form (messages go to the admin inbox) |
+| `/privacy` | Privacy policy |
+| `/admin` | Admin area for the app team (not linked publicly; sign-in with two-factor required) |
 
 ---
 
@@ -186,6 +189,15 @@ Open http://localhost:5173.
 All Google Places and Routes calls go through the backend, so the server key is never exposed to the browser.
 
 ---
+
+## Admin area
+
+`/admin` is for the app's admin team. It's loaded as a separate bundle, so ordinary visitors never download its code.
+
+- **Sign-in:** email, password and a 6-digit code from an authenticator app. On first sign-in, the admin scans a QR code to set up two-factor.
+- **Accounts:** created only from the backend's command line (`python -m app.scripts.manage_admin create ...`); there is no public sign-up.
+- **Features:** dashboard (new messages, Team UoS CO₂ by mode, fares sync status with a "Sync fares now" button, Google usage against the daily cap, live-bus feed status), messages inbox (search, filter, reply by email, resolve, spam, internal notes, delete, erase everything from one sender for data requests), activity log, and password change.
+- **Sessions:** kept for the browser tab only, end after 30 minutes or 15 minutes of inactivity, and "Sign out" ends the session on every device.
 
 ## Security and privacy
 

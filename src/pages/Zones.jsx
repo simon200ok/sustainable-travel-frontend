@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { getZones } from '../lib/api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { zonePricing } from '../data/travelData';
@@ -150,6 +151,10 @@ export default function Zones() {
                   See the official zone map
                 </a>
               </p>
+
+              <Link to="/contact?topic=travel-info" className="report-link zone-report">
+                🚩 Spotted something wrong with a zone or station? Tell us
+              </Link>
 
               <div className="zone-tips">
                 <div className="zone-tip-card">

@@ -23,7 +23,7 @@ export default class ErrorBoundary extends Component {
           <span className="notice-icon" aria-hidden="true">⚠️</span>
           <div>
             <strong>{this.props.title || "Something went wrong on this page"}</strong>
-            Please reload the page. If it keeps happening, try again later.
+            Please reload the page. If it keeps happening, <a href="/contact?topic=problem" className="inline-link">let us know</a>.
             <div className="notice-actions">
               <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>
                 Reload

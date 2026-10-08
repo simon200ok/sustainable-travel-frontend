@@ -228,6 +228,10 @@ export default function Ticketing() {
             Bus fares: {data.fares.source || "Bus Open Data Service"}. {data.fares.licence}
           </p>
 
+          <Link to="/contact?topic=travel-info" className="report-link">
+            🚩 Spotted a wrong or missing price? Tell us
+          </Link>
+
           <div className="student-tip">
             <div className="student-tip-icon" aria-hidden="true">💡</div>
             <div>
