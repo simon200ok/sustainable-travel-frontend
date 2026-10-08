@@ -109,3 +109,30 @@ export const eraseMessagesFrom = (email) => adminRequest("/admin/messages/erase"
 export const syncFaresNow = () => adminRequest("/admin/fares/sync", { method: "POST" });
 
 export const getAuditLog = (page = 1) => adminRequest(`/admin/audit?page=${page}`);
+
+export const sendTestAlert = () => adminRequest("/admin/alerts/test", { method: "POST" });
+
+// ── Admin accounts and invites ──
+export const listAdmins = () => adminRequest("/admin/admins");
+export const adminAction = (id, action) => adminRequest(`/admin/admins/${encodeURIComponent(id)}/${action}`, { method: "POST" });
+export const deleteAdmin = (id) => adminRequest(`/admin/admins/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const inviteAdmin = (email, name) => adminRequest("/admin/invites", { method: "POST", body: { email, name } });
+export const revokeInvite = (id) => adminRequest(`/admin/invites/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const acceptInvite = (token, password) =>
+  adminRequest("/admin/auth/accept-invite", { method: "POST", body: { token, password }, auth: false });
+
+// ── Content editing ──
+export const listContentTickets = () => adminRequest("/admin/content/tickets");
+export const createTicket = (ticket) => adminRequest("/admin/content/tickets", { method: "POST", body: ticket });
+export const updateTicket = (id, changes) =>
+  adminRequest(`/admin/content/tickets/${encodeURIComponent(id)}`, { method: "PATCH", body: changes });
+export const deleteTicket = (id) => adminRequest(`/admin/content/tickets/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const updateZone = (id, changes) =>
+  adminRequest(`/admin/content/zones/${encodeURIComponent(id)}`, { method: "PATCH", body: changes });
+export const createLocation = (location) => adminRequest("/admin/content/locations", { method: "POST", body: location });
+export const updateLocation = (id, changes) =>
+  adminRequest(`/admin/content/locations/${encodeURIComponent(id)}`, { method: "PATCH", body: changes });
+export const deleteLocation = (id) => adminRequest(`/admin/content/locations/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const getContentNotes = () => adminRequest("/admin/content/meta");
+export const updateContentNote = (key, value) =>
+  adminRequest(`/admin/content/meta/${encodeURIComponent(key)}`, { method: "PUT", body: { value } });

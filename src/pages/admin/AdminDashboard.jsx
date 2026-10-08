@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getAdminStats, syncFaresNow } from '../../lib/adminApi';
+import { getAdminStats, sendTestAlert, syncFaresNow } from '../../lib/adminApi';
 import { MODE_META, formatKg } from '../../lib/format';
 
 const dateTime = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
@@ -10,6 +10,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
   const [sync, setSync] = useState({ busy: false, message: '' });
+  const [alertMsg, setAlertMsg] = useState('');
 
   const load = useCallback(() => {
     getAdminStats().then(setStats).catch((err) => setError(err.message));
@@ -25,6 +26,15 @@ export default function AdminDashboard() {
       load();
     } catch (err) {
       setSync({ busy: false, message: err.message });
+    }
+  }
+
+  async function testAlert() {
+    setAlertMsg('Sending…');
+    try {
+      setAlertMsg((await sendTestAlert()).message);
+    } catch (err) {
+      setAlertMsg(err.message);
     }
   }
 
@@ -94,8 +104,11 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           )}
+          <p className="admin-muted">
+            Updates automatically every day at {stats.faresSchedule.time} ({stats.faresSchedule.timezone}). Next run: {fmt(stats.faresSchedule.nextRun)}.
+          </p>
           <button type="button" className="btn btn-ghost" onClick={runSync} disabled={sync.busy}>
-            {sync.busy ? <span className="spinner" /> : '🔄'} {sync.busy ? 'Syncing (about 20 seconds)…' : 'Sync fares now'}
+            {sync.busy ? <span className="spinner" /> : '🔄'} {sync.busy ? 'Syncing (about 20 seconds)…' : 'Sync now (special occasions only)'}
           </button>
           {sync.message && <p className="admin-muted" role="status">{sync.message}</p>}
         </section>
@@ -113,6 +126,16 @@ export default function AdminDashboard() {
               ? 'Not requested since the server started.'
               : `Last fetched ${stats.liveBuses.lastFetchSecondsAgo}s ago · ${stats.liveBuses.vehicles} bus(es) live`}
           </p>
+          <p className="admin-label">Email alerts</p>
+          <p className="admin-muted">
+            {stats.alerts.configured
+              ? `On — new messages and security events are emailed to ${stats.alerts.to}`
+              : 'Off — add RESEND_API_KEY and ALERT_EMAIL_TO on Render to turn them on.'}
+          </p>
+          {stats.alerts.configured && (
+            <button type="button" className="btn btn-ghost" onClick={testAlert}>✉️ Send a test email</button>
+          )}
+          {alertMsg && <p className="admin-muted" role="status">{alertMsg}</p>}
           <p className="admin-label">Map locations</p>
           <p className="admin-muted">
             {Object.entries(stats.locations).map(([type, n]) => `${type.replace('_', ' ')}: ${n}`).join(' · ')}

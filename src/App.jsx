@@ -12,6 +12,7 @@ import TravelMap from './pages/TravelMap';
 import Sustainability from './pages/Sustainability';
 import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
+import Accessibility from './pages/Accessibility';
 import { restoreReminders } from './lib/reminders';
 import { speak } from './lib/speech';
 import './components/AppBanners.css';
@@ -74,6 +75,7 @@ function App() {
             <Route path="/sustainability" element={<Sustainability />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/accessibility" element={<Accessibility />} />
             <Route
               path="/admin/*"
               element={

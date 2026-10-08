@@ -28,3 +28,9 @@
   font-weight: 600;
   text-decoration: underline;
 }
+
+.privacy-body h3 {
+  font-size: 1rem;
+  margin: 18px 0 6px;
+  color: var(--text-primary);
+}

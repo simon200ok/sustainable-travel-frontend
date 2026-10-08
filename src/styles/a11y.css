@@ -1,0 +1,50 @@
+/*
+ * Colour contrast fixes (WCAG 2.2 AA: 4.5:1 for normal text).
+ * The UoS brand orange (#F57C00) stays for large/decorative uses: hero accent, borders,
+ * highlights and map pins. Where orange is *text*, or sits behind white text, the deeper
+ * --accent-strong (#B34D00) is used so it can be read by everyone.
+ * ":root" raises specificity so these win over component styles loaded later.
+ */
+
+/* Buttons and selected chips: white text on deeper orange (5.3:1) */
+:root .btn-primary,
+:root .planner-search,
+:root .app-banner-btn,
+:root .filter-chip.active,
+:root .map-layer-toggles button.active {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+}
+
+:root .btn-primary:hover {
+  background: var(--accent-strong-hover);
+}
+
+/* Orange text on light backgrounds */
+:root .nav-link.active,
+:root .nav-step-list .current,
+:root .btn-ghost:hover,
+:root .link-button,
+:root .report-link,
+:root .report-link:hover,
+:root .contact-consent a,
+:root .contact-aside-card a,
+:root .quick-link-card:hover .quick-link-arrow,
+:root .privacy-body a,
+:root .ticket-price,
+:root .operator-website-link,
+:root .inline-link,
+:root .campus-switch button:hover,
+:root .zone-campus-tag,
+:root .zone-source a,
+:root .admin-tab.active,
+:root .admin-stat-value,
+:root .route-badge-orange {
+  color: var(--accent-text);
+}
+
+/* Station tags in dark mode */
+:root[data-theme="dark"] .zone-tag-station {
+  color: #e0b84a;
+}

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { SIGNED_OUT_EVENT, adminLogout, clearSession, getSession, saveSession } from '../../lib/adminApi';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
 import AdminMessages from './AdminMessages';
 import AdminAudit from './AdminAudit';
 import AdminAccount from './AdminAccount';
+import AdminContent from './AdminContent';
+import AdminAdmins from './AdminAdmins';
+import AcceptInvite from './AcceptInvite';
 import './Admin.css';
 
 const IDLE_LIMIT_MS = 15 * 60 * 1000;
@@ -53,12 +56,16 @@ function useAdminSession() {
 const TABS = [
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/messages', label: 'Messages' },
+  { to: '/admin/content', label: 'Content' },
+  { to: '/admin/admins', label: 'Admins' },
   { to: '/admin/audit', label: 'Activity log' },
   { to: '/admin/account', label: 'My account' },
 ];
 
 export default function AdminApp() {
   const { session, signIn, signOut } = useAdminSession();
+  const { pathname } = useLocation();
+  const acceptingInvite = pathname.startsWith('/admin/invite');
 
   return (
     <div className="page admin">
@@ -66,7 +73,9 @@ export default function AdminApp() {
       <title>Admin · UoS Sustainable Travel Hub</title>
       <meta name="robots" content="noindex, nofollow" />
 
-      {!session ? (
+      {acceptingInvite ? (
+        <AcceptInvite />
+      ) : !session ? (
         <AdminLogin onSignedIn={signIn} />
       ) : (
         <>
@@ -92,6 +101,8 @@ export default function AdminApp() {
             <Routes>
               <Route index element={<AdminDashboard />} />
               <Route path="messages" element={<AdminMessages />} />
+              <Route path="content" element={<AdminContent />} />
+              <Route path="admins" element={<AdminAdmins />} />
               <Route path="audit" element={<AdminAudit />} />
               <Route path="account" element={<AdminAccount admin={session.admin} onSignOut={signOut} />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />

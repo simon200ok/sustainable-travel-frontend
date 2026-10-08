@@ -12,7 +12,8 @@
   --uos-white: #f3f8fa;
   --uos-grey-light: #F5F5F7;
   --uos-grey: #E0E0E0;
-  --uos-grey-mid: #888888;
+  /* #6B6B6B (not #888) so small grey text meets WCAG contrast */
+  --uos-grey-mid: #6B6B6B;
   --uos-grey-dark: #555555;
   --uos-green: #2E7D32;
   --uos-green-light: #E8F5E9;
@@ -35,6 +36,10 @@
   --border: var(--uos-grey);
   --text-on-dark: #f3f8fa;
   --link: var(--uos-navy-light);
+  /* Accessible orange for text and for backgrounds behind white text */
+  --accent-strong: #B34D00;
+  --accent-strong-hover: #9A4200;
+  --accent-text: #B34D00;
   --focus-ring: 0 0 0 3px rgba(245, 124, 0, 0.35);
 
   --nav-height: 72px;
@@ -79,6 +84,7 @@
   --surface-2: #1C2840;
   --border: #2C3A55;
   --link: #8AB8FF;
+  --accent-text: #FF9800;
 
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
@@ -142,6 +148,26 @@ button {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Skip link and other hidden helpers become visible when they receive keyboard focus */
+.visually-hidden:focus,
+.visually-hidden:focus-visible {
+  position: fixed !important;
+  top: 8px;
+  left: 8px;
+  width: auto;
+  height: auto;
+  clip: auto;
+  overflow: visible;
+  white-space: normal;
+  z-index: 3000;
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--focus-ring), var(--shadow-md);
+  font-weight: 700;
 }
 
 .container {

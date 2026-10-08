@@ -108,3 +108,5 @@ export const getLocations = () => request("/locations", { cacheMs: 300_000 });
 
 export const sendContactMessage = (form) =>
   request("/contact", { method: "POST", body: form, timeoutMs: 20_000 });
+
+export const getContentMeta = () => request("/content/meta", { cacheMs: 300_000 });

@@ -170,7 +170,8 @@ Open http://localhost:5173.
 | `/sustainability` | Sustainable travel information and tips |
 | `/contact` | Contact us form (messages go to the admin inbox) |
 | `/privacy` | Privacy policy |
-| `/admin` | Admin area for the app team (not linked publicly; sign-in with two-factor required) |
+| `/accessibility` | Accessibility statement (Public Sector Bodies Accessibility Regulations 2018) |
+| `/admin` | Admin area for the app team (sign-in with two-factor required) |
 
 ---
 
@@ -195,7 +196,8 @@ All Google Places and Routes calls go through the backend, so the server key is 
 `/admin` is for the app's admin team. It's loaded as a separate bundle, so ordinary visitors never download its code.
 
 - **Sign-in:** email, password and a 6-digit code from an authenticator app. On first sign-in, the admin scans a QR code to set up two-factor.
-- **Accounts:** created only from the backend's command line (`python -m app.scripts.manage_admin create ...`); there is no public sign-up.
+- **Accounts:** no public sign-up. New admins are invited by an existing admin (single-use link, expires after 72 hours) or created by the system owner with the backend's command-line tool. The app always keeps at least one admin who can sign in.
+- **Content editing:** Metro and other manually maintained fares, zone descriptions and stations, map locations (click the map to place cycle parking), and page notes. Bus fares sync automatically every day at 05:15 UK time.
 - **Features:** dashboard (new messages, Team UoS CO₂ by mode, fares sync status with a "Sync fares now" button, Google usage against the daily cap, live-bus feed status), messages inbox (search, filter, reply by email, resolve, spam, internal notes, delete, erase everything from one sender for data requests), activity log, and password change.
 - **Sessions:** kept for the browser tab only, end after 30 minutes or 15 minutes of inactivity, and "Sign out" ends the session on every device.
 

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { readableTextOn } from '../lib/colour';
 import { getZones } from '../lib/api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { zonePricing } from '../data/travelData';
@@ -79,7 +80,7 @@ export default function Zones() {
                     className={`zone-card ${zone.highlight ? 'zone-highlight' : ''}`}
                   >
                     <div className="zone-card-header">
-                      <div className="zone-badge" style={{ background: zone.color }}>
+                      <div className="zone-badge" style={{ background: zone.color, color: readableTextOn(zone.color) }}>
                         {zone.name}
                       </div>
                       <h3>{zone.label}</h3>

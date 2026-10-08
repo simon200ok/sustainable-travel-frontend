@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getFares, getOperators, getTickets } from "../lib/api";
+import { getContentMeta, getFares, getOperators, getTickets } from "../lib/api";
 import { formatPrice } from "../lib/format";
+import { readableTextOn } from "../lib/colour";
 import { useAsyncData } from "../hooks/useAsyncData";
 import "./Ticketing.css";
 
@@ -17,16 +18,19 @@ const OPERATOR_INFO = {
 const dateFormatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const formatDate = (iso) => (iso ? dateFormatter.format(new Date(iso)) : "");
 
+const METRO_NOTE_FALLBACK = "Nexus fares in effect from 1 April 2026 (“Mayor's Fares”). Pop Pay As You Go automatically caps what you pay.";
+
 export default function Ticketing() {
   const [category, setCategory] = useState("All");
 
   const { data, loading, error } = useAsyncData(async () => {
-    const [fares, operators, tickets] = await Promise.all([
+    const [fares, operators, tickets, meta] = await Promise.all([
       getFares().catch(() => ({ operators: [], failed: true })),
       getOperators(),
       getTickets(),
+      getContentMeta().catch(() => ({})),
     ]);
-    return { fares, operators, tickets };
+    return { fares, operators, tickets, meta };
   }, []);
 
   const busOperators = useMemo(() => {
@@ -103,7 +107,7 @@ export default function Ticketing() {
                 <div key={op.noc} className="ticket-operator-card">
                   <div className="ticket-operator-header">
                     <div className="ticket-operator-info">
-                      <span className="ticket-type-badge" style={{ background: info.color || "#555" }}>Bus</span>
+                      <span className="ticket-type-badge" style={{ background: info.color || "#555", color: readableTextOn(info.color || "#555") }}>Bus</span>
                       <h2>{op.operator}</h2>
                       <p className="fares-updated">
                         <span className="live-dot" aria-hidden="true" /> Official fares, checked {formatDate(op.syncedAt)}
@@ -158,9 +162,9 @@ export default function Ticketing() {
               <div className="ticket-operator-card">
                 <div className="ticket-operator-header">
                   <div className="ticket-operator-info">
-                    <span className="ticket-type-badge" style={{ background: metro.color, color: "#323232" }}>Metro</span>
+                    <span className="ticket-type-badge" style={{ background: metro.color, color: readableTextOn(metro.color) }}>Metro</span>
                     <h2>{metro.name}</h2>
-                    <p>Nexus fares in effect from 1 April 2026 (“Mayor's Fares”). Pop Pay As You Go automatically caps what you pay.</p>
+                    <p>{data.meta?.metro_fares_note || METRO_NOTE_FALLBACK}</p>
                   </div>
                 </div>
                 <div className="ticket-table-wrapper">
@@ -203,7 +207,7 @@ export default function Ticketing() {
               <div className="ticket-operator-card">
                 <div className="ticket-operator-header">
                   <div className="ticket-operator-info">
-                    <span className="ticket-type-badge" style={{ background: rail.color }}>Train</span>
+                    <span className="ticket-type-badge" style={{ background: rail.color, color: readableTextOn(rail.color) }}>Train</span>
                     <h2>{rail.name}</h2>
                     <p>
                       Rail fares depend on where and when you travel. <Link to="/" className="inline-link">Plan your journey</Link> to
