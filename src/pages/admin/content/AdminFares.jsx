@@ -84,8 +84,12 @@ export default function AdminFares() {
 
   return (
     <section className="admin-panel admin-panel-wide">
-      <h2>Metro, rail and other fares</h2>
-      <p className="admin-muted">These appear on the Ticketing page (for example Nexus Metro fares, which aren't published as open data).</p>
+      <h2>Manually maintained fares</h2>
+      <p className="admin-muted">
+        Metro fares now update automatically every morning from Travel North East (Nexus), like bus fares. The Metro
+        fares below are a backup: the Ticketing page shows them only if the automatic update ever stops working. Use this
+        list for that, or for other tickets that aren't published online.
+      </p>
       <div className="admin-table-wrap">
         <table className="admin-table admin-edit-table">
           <thead>

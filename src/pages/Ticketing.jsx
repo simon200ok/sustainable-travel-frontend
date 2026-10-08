@@ -6,13 +6,23 @@ import { readableTextOn } from "../lib/colour";
 import { useAsyncData } from "../hooks/useAsyncData";
 import "./Ticketing.css";
 
-const CATEGORIES = ["All", "Adult", "Young person", "Child", "Family", "Group"];
+const CATEGORIES = ["All", "Adult", "Student", "Young person", "Child", "Family", "Group"];
+
+// Jim Hughes first: it runs the 700/701 university buses most students use
+const OPERATOR_ORDER = ["JHCL", "GNEL", "SCNE", "NEXUS"];
 
 // Where to buy, by National Operator Code
 const OPERATOR_INFO = {
   GNEL: { color: "#E30613", website: "https://www.gonortheast.co.uk", note: "Buy on the Go North East app or contactless on board." },
   SCNE: { color: "#E37124", website: "https://www.stagecoachbus.com", note: "Buy in the Stagecoach Bus app or contactless on board." },
   JHCL: { color: "#1565C0", website: null, note: "Operator of the 700/701 university buses." },
+  NEXUS: {
+    color: "#FFD700",
+    website: "https://travelnortheast.uk/tickets/buy-tickets/",
+    note: "Buy at Metro ticket machines, or tap in and out with a Pop card.",
+    mode: "Metro",
+    source: "Travel North East (Nexus)",
+  },
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -35,9 +45,11 @@ export default function Ticketing() {
 
   const busOperators = useMemo(() => {
     const ops = data?.fares?.operators ?? [];
+    const rank = (noc) => (OPERATOR_ORDER.includes(noc) ? OPERATOR_ORDER.indexOf(noc) : OPERATOR_ORDER.length);
     return ops
       .map((op) => ({ ...op, fares: op.fares.filter((f) => category === "All" || f.category === category) }))
-      .filter((op) => op.fares.length);
+      .filter((op) => op.fares.length)
+      .sort((a, b) => rank(a.noc) - rank(b.noc));
   }, [data, category]);
 
   const metro = useMemo(() => {
@@ -58,6 +70,8 @@ export default function Ticketing() {
   }
 
   const hasLiveFares = (data.fares.operators ?? []).length > 0;
+  // Metro fares now sync automatically; the admin-maintained list is only a fallback
+  const hasLiveMetro = (data.fares.operators ?? []).some((op) => op.noc === "NEXUS");
 
   return (
     <div className="page ticketing">
@@ -65,8 +79,8 @@ export default function Ticketing() {
         <div className="container">
           <h1 className="page-title">Ticketing & Prices</h1>
           <p className="page-desc">
-            Bus fares are pulled every day from the operators' official fares data, so the prices here
-            match what you pay. Plan a journey on the home page to see the fare for that exact trip.
+            Bus and Metro fares are updated automatically every morning from official sources, so the prices
+            here match what you pay. Plan a journey on the home page to see the fare for that exact trip.
           </p>
         </div>
       </section>
@@ -107,11 +121,12 @@ export default function Ticketing() {
                 <div key={op.noc} className="ticket-operator-card">
                   <div className="ticket-operator-header">
                     <div className="ticket-operator-info">
-                      <span className="ticket-type-badge" style={{ background: info.color || "#555", color: readableTextOn(info.color || "#555") }}>Bus</span>
+                      <span className="ticket-type-badge" style={{ background: info.color || "#555", color: readableTextOn(info.color || "#555") }}>{info.mode || "Bus"}</span>
                       <h2>{op.operator}</h2>
+                      {op.noc === "NEXUS" && <p>{data.meta?.metro_fares_note || METRO_NOTE_FALLBACK}</p>}
                       <p className="fares-updated">
                         <span className="live-dot" aria-hidden="true" /> Official fares, checked {formatDate(op.syncedAt)}
-                        {op.datasetModified && ` · operator last updated ${formatDate(op.datasetModified)}`}
+                        {op.datasetModified && ` · ${info.source || "operator"} last updated ${formatDate(op.datasetModified)}`}
                       </p>
                     </div>
                   </div>
@@ -158,7 +173,7 @@ export default function Ticketing() {
               <p className="fares-empty">No {category.toLowerCase()} bus tickets found. Try another passenger type.</p>
             )}
 
-            {metro && metro.tickets.length > 0 && (category === "All" || category === "Adult" || category === "Young person") && (
+            {!hasLiveMetro && metro && metro.tickets.length > 0 && (category === "All" || category === "Adult" || category === "Young person") && (
               <div className="ticket-operator-card">
                 <div className="ticket-operator-header">
                   <div className="ticket-operator-info">

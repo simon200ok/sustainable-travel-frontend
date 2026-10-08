@@ -31,7 +31,8 @@ export default function Zones() {
   const { data, loading, error } = useAsyncData(getZones, []);
 
   const zones = useMemo(() => {
-    return (data ?? []).map((zone) => {
+    // Always show Zone A, B, C, D in order, whatever order the server returns them in
+    return [...(data ?? [])].sort((a, b) => a.name.localeCompare(b.name)).map((zone) => {
       const meta = zoneMeta[zone.name] || {
         label: zone.name,
         highlight: false,

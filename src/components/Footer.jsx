@@ -35,6 +35,7 @@ export default function Footer() {
             <NavLink to="/contact">Contact Us</NavLink>
             <NavLink to="/privacy">Privacy Policy</NavLink>
             <NavLink to="/accessibility">Accessibility</NavLink>
+            <NavLink to="/admin">Admin Sign-in</NavLink>
           </div>
 
           <div className="footer-col">
@@ -54,7 +55,6 @@ export default function Footer() {
 
         <div className="footer-bottom">
           <p>&copy; {new Date().getFullYear()} University of Sunderland Developer Society. All rights reserved.</p>
-          <NavLink to="/admin" className="footer-admin-link">Admin sign-in</NavLink>
         </div>
       </div>
     </footer>
