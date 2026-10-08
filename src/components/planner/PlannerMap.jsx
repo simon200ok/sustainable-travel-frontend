@@ -5,6 +5,7 @@ import { readJSON, writeJSON } from "../../lib/storage";
 import { MODE_META } from "../../lib/format";
 import { SUNDERLAND } from "../../lib/geo";
 import { boundsOf, decodePolyline, stepPath } from "../../lib/navigation";
+import ErrorBoundary from "../ErrorBoundary";
 import UserLocationMarker from "./UserLocationMarker";
 
 const BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY;
@@ -149,7 +150,26 @@ function useInView(ref) {
   return visible;
 }
 
-export default function PlannerMap({
+// If Google Maps itself fails (key not allowed on this page, network, ...), only the map is
+// replaced: route options and turn-by-turn directions keep working
+export default function PlannerMap(props) {
+  return (
+    <ErrorBoundary
+      fallback={(retry) => (
+        <div className={`planner-map planner-map-fallback ${props.navigating ? "planner-map-nav" : ""}`} role="alert">
+          <p>
+            🗺️ The map couldn't load just now. Your directions still work.{" "}
+            <button type="button" className="link-button" onClick={retry}>Try the map again</button>
+          </p>
+        </div>
+      )}
+    >
+      <PlannerMapInner {...props} />
+    </ErrorBoundary>
+  );
+}
+
+function PlannerMapInner({
   origin,
   destination,
   option,

@@ -15,8 +15,12 @@ export default class ErrorBoundary extends Component {
     console.error("UI error:", error, info?.componentStack);
   }
 
+  reset = () => this.setState({ hasError: false });
+
   render() {
     if (!this.state.hasError) return this.props.children;
+    // A small, local fallback (e.g. "map unavailable") instead of the whole-page message
+    if (this.props.fallback) return this.props.fallback(this.reset);
     return (
       <div className="container" style={{ padding: "64px 24px" }} role="alert">
         <div className="notice notice-error">
