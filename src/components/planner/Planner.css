@@ -804,3 +804,220 @@
 .map-location-controls button:hover {
   border-color: var(--uos-orange);
 }
+
+/* ── Campus / anywhere-in-the-UK switch ──────────────────────────────── */
+
+.planner-scope {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--bg-secondary);
+}
+
+.planner-scope button {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 7px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.planner-scope button.active {
+  background: var(--accent-strong);
+  color: #fff;
+}
+
+.planner-scope button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── Live buses on the Google map ────────────────────────────────────── */
+
+.map-bus {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--uos-navy);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.map-bus-arrow {
+  position: absolute;
+  inset: -9px;
+  pointer-events: none;
+}
+
+.map-bus-arrow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom: 6px solid var(--uos-orange);
+  border-top: none;
+}
+
+.map-bus-status {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 120px);
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  z-index: 5;
+  text-align: center;
+}
+
+/* ── Journey in progress: full-screen directions ─────────────────────── */
+
+body.nav-open {
+  overflow: hidden;
+}
+
+body.has-nav-bar {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+.nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: grid;
+  grid-template-columns: 1fr minmax(320px, 400px);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.nav-overlay-map {
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+}
+
+.nav-overlay .planner-map {
+  height: 100%;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.nav-overlay .nav-panel {
+  max-height: none;
+  height: 100%;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+}
+
+@media (max-width: 900px) {
+  .nav-overlay {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .nav-overlay .nav-panel {
+    height: auto;
+    max-height: 48vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* ── Journey in progress: minimised bar on every page ────────────────── */
+
+.nav-bar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 1400;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 10px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 2px solid var(--uos-orange);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.nav-bar-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-bar-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.nav-bar-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nav-bar-text strong,
+.nav-bar-text span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-bar-text strong {
+  font-size: 0.92rem;
+}
+
+.nav-bar-text span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.nav-bar-open {
+  flex: none;
+  padding: 8px 16px;
+}

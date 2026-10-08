@@ -1,10 +1,13 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Link } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getLiveBuses, getLocations } from '../lib/api';
 import { useAsyncData } from '../hooks/useAsyncData';
+import { LIVE_MIN_ZOOM, areaStatusText, useAreaVehicles } from '../hooks/useAreaVehicles';
+import { getCurrentPosition } from '../lib/geo';
+import { readJSON, writeJSON } from '../lib/storage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import './TravelMap.css';
 
@@ -38,6 +41,9 @@ const legendItems = [
   { type: 'live', label: 'Live 700/701 bus' },
 ];
 
+// Remember where the map was (for this visit) so coming back to the page keeps the same view
+let lastView = null;
+
 function createIcon(type) {
   const color = iconColors[type] || '#F57C00';
   const size = type === 'cycle_park' ? 28 : 36;
@@ -50,13 +56,13 @@ function createIcon(type) {
   });
 }
 
-function createBusIcon(bus) {
-  // Route numbers come from a fixed allow-list (700/701) on the server; bearing is numeric
-  const route = String(bus.route).replace(/[^0-9A-Za-z]/g, '');
+function createBusIcon(bus, other = false) {
+  // Only letters and digits reach the HTML; bearing is numeric
+  const route = String(bus.route).replace(/[^0-9A-Za-z]/g, '').slice(0, 5);
   const rotation = Number.isFinite(bus.bearing) ? bus.bearing : null;
   return L.divIcon({
     className: 'custom-marker live-bus-marker',
-    html: `<div class="live-bus">${
+    html: `<div class="live-bus${other ? ' live-bus-other' : ''}">${
       rotation !== null ? `<span class="live-bus-arrow" style="transform:rotate(${rotation}deg)"></span>` : ''
     }<span class="live-bus-route">${route}</span></div>`,
     iconSize: [44, 44],
@@ -73,9 +79,35 @@ function secondsAgo(iso) {
 function FlyTo({ target }) {
   const map = useMap();
   useEffect(() => {
-    if (target) map.flyTo(target, DEFAULT_ZOOM, { duration: 1.2 });
+    if (target) map.flyTo(target.center, target.zoom ?? DEFAULT_ZOOM, { duration: 1.2 });
   }, [map, target]);
   return null;
+}
+
+// Reports what the map is showing (debounced by Leaflet's moveend) and remembers it
+function ViewWatcher({ onView }) {
+  const map = useMap();
+  useEffect(() => {
+    const read = () => {
+      const b = map.getBounds();
+      const center = map.getCenter();
+      lastView = { center: [center.lat, center.lng], zoom: map.getZoom() };
+      onView({ bounds: { west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() }, zoom: map.getZoom() });
+    };
+    read();
+    map.on('moveend', read);
+    return () => map.off('moveend', read);
+  }, [map, onView]);
+  return null;
+}
+
+function createMeIcon() {
+  return L.divIcon({
+    className: 'custom-marker',
+    html: '<div class="map-me" aria-hidden="true"></div>',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
 }
 
 function useLiveBuses(enabled) {
@@ -127,6 +159,39 @@ export default function TravelMap() {
   const [flyTarget, setFlyTarget] = useState(null);
   const showLive = !hidden.has('live');
   const { buses, status, online } = useLiveBuses(showLive);
+  const [allBuses, setAllBuses] = useState(() => readJSON('uos-map-all-buses', false));
+  const [view, setView] = useState(null);
+  const area = useAreaVehicles(view, allBuses);
+  const [me, setMe] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState('');
+  const onView = useCallback((v) => setView(v), []);
+  const meIcon = useMemo(createMeIcon, []);
+
+  useEffect(() => {
+    writeJSON('uos-map-all-buses', allBuses);
+  }, [allBuses]);
+
+  // The 700/701 layer already shows university buses, so don't draw them twice
+  const universityRefs = useMemo(() => new Set(buses.map((b) => b.vehicleRef).filter(Boolean)), [buses]);
+  const otherBuses = useMemo(
+    () => area.vehicles.filter((v) => !(showLive && universityRefs.has(v.vehicleRef))).slice(0, 500).map((v) => ({ ...v, icon: createBusIcon(v, true) })),
+    [area.vehicles, showLive, universityRefs],
+  );
+
+  async function showMyLocation() {
+    setLocating(true);
+    setLocateError('');
+    try {
+      const pos = await getCurrentPosition();
+      setMe([pos.lat, pos.lng]);
+      setFlyTarget({ center: [pos.lat, pos.lng], zoom: Math.max(DEFAULT_ZOOM, view?.zoom ?? 0) });
+    } catch {
+      setLocateError("Couldn't get your location. Check that location is allowed for this site.");
+    } finally {
+      setLocating(false);
+    }
+  }
 
   const markers = useMemo(
     () =>
@@ -161,6 +226,7 @@ export default function TravelMap() {
           <h1 className="page-title">Live Map</h1>
           <p className="page-desc">
             Campuses, cycle parking and transport links — with the 700 and 701 university buses moving live.
+            Turn on <strong>All buses in view</strong> to see every bus moving anywhere in England.
           </p>
         </div>
       </section>
@@ -192,10 +258,32 @@ export default function TravelMap() {
               })}
             </div>
             <div className="campus-switch" role="group" aria-label="Jump to campus">
-              <button type="button" onClick={() => setFlyTarget([...SUNDERLAND_CENTER])}>Sunderland</button>
-              <button type="button" onClick={() => setFlyTarget([...LONDON_CENTER])}>London</button>
+              <button type="button" onClick={() => setFlyTarget({ center: [...SUNDERLAND_CENTER] })}>Sunderland</button>
+              <button type="button" onClick={() => setFlyTarget({ center: [...LONDON_CENTER] })}>London</button>
+              <button type="button" onClick={showMyLocation} disabled={locating} aria-label="Show my location on the map">
+                {locating ? <span className="spinner" /> : '◎'} My location
+              </button>
             </div>
           </div>
+
+          <div className="all-buses-row">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={allBuses}
+              className={`all-buses-toggle ${allBuses ? 'active' : ''}`}
+              onClick={() => setAllBuses((v) => !v)}
+            >
+              <span className="all-buses-knob" aria-hidden="true" />
+              🚌 All buses in view
+            </button>
+            {allBuses && (
+              <span className={`live-status-inline ${area.status === 'error' ? 'live-status-error' : ''}`} role="status" aria-live="polite">
+                {areaStatusText(area) || `Move the map to load buses (zoom ${LIVE_MIN_ZOOM}+).`}
+              </span>
+            )}
+          </div>
+          {locateError && <p className="live-status live-status-error" role="alert">{locateError}</p>}
 
           {showLive && (
             <p className={`live-status ${status.error ? 'live-status-error' : ''}`} role="status" aria-live="polite">
@@ -213,8 +301,8 @@ export default function TravelMap() {
 
           <div className="map-wrapper">
             <MapContainer
-              center={SUNDERLAND_CENTER}
-              zoom={DEFAULT_ZOOM}
+              center={lastView?.center ?? SUNDERLAND_CENTER}
+              zoom={lastView?.zoom ?? DEFAULT_ZOOM}
               scrollWheelZoom={true}
               style={{ height: '100%', width: '100%' }}
               className="travel-map"
@@ -224,6 +312,28 @@ export default function TravelMap() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <FlyTo target={flyTarget} />
+              <ViewWatcher onView={onView} />
+              {me && <Marker position={me} icon={meIcon} zIndexOffset={2000} title="You are here" />}
+              {allBuses &&
+                otherBuses.map((bus) => (
+                  <Marker
+                    key={`a-${bus.operatorRef}-${bus.vehicleRef || `${bus.route}-${bus.lat}`}`}
+                    position={[bus.lat, bus.lng]}
+                    icon={bus.icon}
+                    zIndexOffset={500}
+                  >
+                    <Popup>
+                      <div className="map-popup">
+                        <h3>Bus {bus.route}</h3>
+                        <p>
+                          {bus.origin && bus.destination ? `${bus.origin} → ${bus.destination}` : bus.destination ? `To ${bus.destination}` : 'Live bus'}
+                          <br />
+                          Operator: {bus.operatorRef || 'unknown'} · updated {secondsAgo(bus.recordedAt)}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
               {markers.map((loc) => (
                 <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={loc.icon}>
                   <Popup>

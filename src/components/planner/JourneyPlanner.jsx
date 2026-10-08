@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useJourney } from "../../context/JourneyContext";
 import { getLocations, planJourney } from "../../lib/api";
 import { getCurrentPosition, locationPermissionState } from "../../lib/geo";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
-import { useImpact } from "../../hooks/useImpact";
 import { useLiveLocation } from "../../hooks/useLiveLocation";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { CAMPUS_PLACES, useSavedPlaces } from "../../hooks/useSavedPlaces";
 import { useTheme } from "../../hooks/useTheme";
 import LocationNotice from "../LocationNotice";
 import LeaveByAlert from "./LeaveByAlert";
-import NavigationPanel from "./NavigationPanel";
 import PlaceInput from "./PlaceInput";
 import PlannerMap from "./PlannerMap";
 import QuickTrips from "./QuickTrips";
@@ -17,12 +16,16 @@ import RouteOptions from "./RouteOptions";
 import "./Planner.css";
 
 const YOUR_LOCATION = "Your location";
+const SCOPES = [
+  { id: "local", label: "🎓 Campus travel", hint: "Suggestions near you, Sunderland and London campuses" },
+  { id: "uk", label: "🗺️ Anywhere in the UK", hint: "Search any town, station or address in the UK" },
+];
 
 export default function JourneyPlanner() {
   const online = useOnlineStatus();
   const { resolved: theme } = useTheme();
   const { places, trips, savePlace, saveTrip, removeTrip } = useSavedPlaces();
-  const { stats, recordJourney } = useImpact();
+  const { trip, startTrip } = useJourney();
 
   const [origin, setOrigin] = useState(null);
   const [destination, setDestination] = useState(null);
@@ -34,14 +37,13 @@ export default function JourneyPlanner() {
   const [selected, setSelected] = useState(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
-  const [navigating, setNavigating] = useState(false);
-  const [following, setFollowing] = useState(true);
+  const [scope, setScope] = useState("local");
   const [cycleParks, setCycleParks] = useState([]);
   const [savedMsg, setSavedMsg] = useState("");
   const resultsRef = useRef(null);
 
   // Keep following the user's position once they've shared it, so the map arrow moves with them
-  const live = useLiveLocation(navigating || tracking);
+  const live = useLiveLocation(tracking);
   const compass = useDeviceHeading();
   const gpsHeading = live.position?.speed > 0.7 && Number.isFinite(live.position?.heading) ? live.position.heading : null;
   const heading = compass.heading ?? gpsHeading;
@@ -150,48 +152,6 @@ export default function JourneyPlanner() {
   const savablePlace = destination && !CAMPUS_PLACES.some((c) => c.label === destination.label) ? destination : null;
   const userPosition = live.position ?? (origin?.isCurrent ? origin : null);
 
-  if (navigating && selected) {
-    return (
-      <div className="planner planner-navigating">
-        <PlannerMap
-          origin={origin}
-          destination={destination}
-          option={selected}
-          userPosition={live.position}
-          heading={heading}
-          compass={compass}
-          navigating
-          following={following}
-          onUserPan={() => setFollowing(false)}
-          cycleParks={cycleParks}
-          theme={theme}
-        />
-        {!following && (
-          <button type="button" className="btn btn-primary recenter-btn" onClick={() => setFollowing(true)}>
-            ◎ Re-centre
-          </button>
-        )}
-        <NavigationPanel
-          option={selected}
-          destination={destination}
-          position={live.position}
-          locationError={live.error}
-          onRetryLocation={() => {
-            setNavigating(false);
-            setTimeout(() => setNavigating(true), 50);
-          }}
-          onReroute={(next) => setSelected(next)}
-          onArrive={() => recordJourney(selected)}
-          onExit={() => {
-            setNavigating(false);
-            setFollowing(true);
-          }}
-          impact={stats}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="planner">
       <form
@@ -201,6 +161,22 @@ export default function JourneyPlanner() {
           search();
         }}
       >
+        <div className="planner-scope" role="radiogroup" aria-label="Where are you travelling?">
+          {SCOPES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="radio"
+              aria-checked={scope === s.id}
+              className={scope === s.id ? "active" : ""}
+              title={s.hint}
+              onClick={() => setScope(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
         <div className="planner-fields">
           <PlaceInput
             key={`o-${inputsKey}`}
@@ -208,8 +184,9 @@ export default function JourneyPlanner() {
             icon="🟢"
             value={origin}
             onChange={setOrigin}
-            placeholder={locating ? "Finding your location…" : "Your location or any address"}
+            placeholder={locating ? "Finding your location…" : scope === "uk" ? "Your location or anywhere in the UK" : "Your location or any address"}
             near={origin?.isCurrent ? origin : null}
+            scope={scope}
             quickOptions={quickOriginOptions}
           />
           <button type="button" className="planner-swap" onClick={swap} aria-label="Swap start and destination">
@@ -221,8 +198,9 @@ export default function JourneyPlanner() {
             icon="🟠"
             value={destination}
             onChange={setDestination}
-            placeholder="Where are you going?"
+            placeholder={scope === "uk" ? "Any town, station or address in the UK" : "Where are you going?"}
             near={origin}
+            scope={scope}
             quickOptions={quickDestinationOptions}
           />
         </div>
@@ -286,16 +264,16 @@ export default function JourneyPlanner() {
                 selected={selected}
                 onSelect={setSelected}
                 onStart={(option) => {
+                  if (trip && !trip.arrived && !window.confirm(`End your journey to ${trip.destination.label} and start this one?`)) return;
                   setSelected(option);
-                  setFollowing(true);
-                  setNavigating(true);
+                  startTrip(origin, destination, option);
                 }}
               />
             </>
           )}
           {!result && !searching && (
             <div className="planner-empty">
-              <h3>Compare every green way to travel</h3>
+              <h3>{scope === "uk" ? "Plan a green journey anywhere in the UK" : "Compare every green way to travel"}</h3>
               <p>Walk, cycle, Metro, bus, train and car share — with live times, CO₂ saved and turn-by-turn voice directions.</p>
             </div>
           )}

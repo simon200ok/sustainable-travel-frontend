@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { useTurnByTurn } from "../../hooks/useTurnByTurn";
+import { useState } from "react";
 import { formatDistance, formatKg, formatTime, MODE_META } from "../../lib/format";
 import { describeStep } from "../../lib/navigation";
-import { speak, speechSupported, stopSpeaking } from "../../lib/speech";
+import { speechSupported } from "../../lib/speech";
 import LocationNotice from "../LocationNotice";
 
-const MANEUVER_ICON = {
+// eslint-disable-next-line react-refresh/only-export-components
+export const MANEUVER_ICON = {
   TURN_LEFT: "⬅️",
   TURN_SLIGHT_LEFT: "↖️",
   TURN_SHARP_LEFT: "⬅️",
@@ -20,35 +20,9 @@ const MANEUVER_ICON = {
   DEPART: "⬆️",
 };
 
-function useWakeLock(active) {
-  const lock = useRef(null);
-  useEffect(() => {
-    if (!active || !("wakeLock" in navigator)) return undefined;
-    const request = async () => {
-      try {
-        lock.current = await navigator.wakeLock.request("screen");
-      } catch {
-        // Not allowed (e.g. battery saver); navigation still works
-      }
-    };
-    const onVisible = () => document.visibilityState === "visible" && request();
-    request();
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisible);
-      lock.current?.release().catch(() => {});
-    };
-  }, [active]);
-}
-
-export default function NavigationPanel({ option, destination, position, locationError, onRetryLocation, onReroute, onArrive, onExit, impact }) {
-  const [voiceOn, setVoiceOn] = useState(speechSupported());
+// Guidance runs in ActiveNavigation (so it continues on every page); this panel only shows it
+export default function NavigationPanel({ option, destination, position, locationError, onRetryLocation, nav, voiceOn, onToggleVoice, onMinimise, onExit, impact }) {
   const [showAll, setShowAll] = useState(false);
-  const nav = useTurnByTurn({ option, destination, position, voiceOn, onReroute, onArrive });
-  useWakeLock(!nav.arrived);
-
-  useEffect(() => stopSpeaking, []);
-
   const meta = MODE_META[option.mode];
   const step = nav.step;
 
@@ -90,17 +64,15 @@ export default function NavigationPanel({ option, destination, position, locatio
             className="nav-icon-btn"
             aria-pressed={voiceOn}
             aria-label={voiceOn ? "Mute voice directions" : "Turn on voice directions"}
-            onClick={() => {
-              const next = !voiceOn;
-              setVoiceOn(next);
-              if (next) speak(describeStep(step));
-              else stopSpeaking();
-            }}
+            onClick={onToggleVoice}
           >
             {voiceOn ? "🔊" : "🔇"}
           </button>
         )}
-        <button type="button" className="nav-icon-btn" onClick={onExit} aria-label="End navigation">
+        <button type="button" className="nav-icon-btn" onClick={onMinimise} aria-label="Minimise directions and use the rest of the app" title="Minimise (the journey keeps going)">
+          ▾
+        </button>
+        <button type="button" className="nav-icon-btn" onClick={onExit} aria-label="End navigation" title="End journey">
           ✕
         </button>
       </div>

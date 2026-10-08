@@ -25,6 +25,7 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
   const announced = useRef(new Set());
   const offCount = useRef(0);
   const lastReroute = useRef(0);
+  const synced = useRef(false);
   const voice = useRef(voiceOn);
   voice.current = voiceOn;
 
@@ -40,6 +41,7 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
     setOffRoute(false);
     announced.current = new Set();
     offCount.current = 0;
+    synced.current = false;
     if (steps[0]) say("0:start", `Starting ${option.label.toLowerCase()} directions. ${describeStep(steps[0])}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [option]);
@@ -52,6 +54,24 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
       if (voice.current) speak(`You have arrived at ${destination.label}.`);
       onArrive?.();
       return;
+    }
+
+    // First fix on this route: if the user is already part-way along (e.g. the page was
+    // reloaded mid-journey), start from the step they're actually on
+    if (!synced.current) {
+      synced.current = true;
+      const tolerance = Math.max(60, (position.accuracy || 0) * 1.5);
+      if (distanceToPath(position, paths[0]) > tolerance) {
+        let best = 0;
+        paths.forEach((p, k) => {
+          if (distanceToPath(position, p) < distanceToPath(position, paths[best])) best = k;
+        });
+        if (best > 0 && distanceToPath(position, paths[best]) <= tolerance) {
+          setIndex(best);
+          say(`${best}:start`, describeStep(steps[best]));
+          return;
+        }
+      }
     }
 
     // Move forward through steps the user has completed (or skipped)

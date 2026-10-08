@@ -65,8 +65,8 @@ async function request(path, options = {}) {
 
 export const getHomeData = () => request("/home", { cacheMs: 60_000 });
 
-export function getPlaceSuggestions(input, { session, near, signal } = {}) {
-  const params = new URLSearchParams({ q: input });
+export function getPlaceSuggestions(input, { session, near, scope = "local", signal } = {}) {
+  const params = new URLSearchParams({ q: input, scope });
   if (session) params.set("session", session);
   if (near) {
     params.set("lat", near.lat.toFixed(4));
@@ -110,3 +110,10 @@ export const sendContactMessage = (form) =>
   request("/contact", { method: "POST", body: form, timeoutMs: 20_000 });
 
 export const getContentMeta = () => request("/content/meta", { cacheMs: 300_000 });
+
+// Every live bus inside the map area (any operator). bounds = { west, south, east, north }
+export const getVehiclesInArea = (bounds, { signal } = {}) =>
+  request(
+    `/live/vehicles?bbox=${[bounds.west, bounds.south, bounds.east, bounds.north].map((v) => v.toFixed(4)).join(",")}`,
+    { cacheMs: 10_000, timeoutMs: 15_000, signal },
+  );

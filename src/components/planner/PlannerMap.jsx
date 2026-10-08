@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { APIProvider, AdvancedMarker, AdvancedMarkerAnchorPoint, Map, Polyline, useMap } from "@vis.gl/react-google-maps";
+import { areaStatusText, useAreaVehicles } from "../../hooks/useAreaVehicles";
+import { readJSON, writeJSON } from "../../lib/storage";
 import { MODE_META } from "../../lib/format";
 import { SUNDERLAND } from "../../lib/geo";
 import { boundsOf, decodePolyline, stepPath } from "../../lib/navigation";
@@ -8,6 +10,14 @@ import UserLocationMarker from "./UserLocationMarker";
 const BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY;
 // Map IDs are created free in Google Cloud → Map Management; DEMO_MAP_ID is for local testing only
 const MAP_ID = import.meta.env.VITE_GOOGLE_MAP_ID || "DEMO_MAP_ID";
+
+// Remembered per map (planner / each journey) for the whole visit, so changing the theme
+// (which rebuilds the Google map) or changing page and coming back keeps the same view
+const cameras = new globalThis.Map(); // (Map here is the Google map component)
+const fittedRoute = new globalThis.Map();
+const centred = new Set();
+const followZoomed = new Set();
+const LAYERS_KEY = "uos-map-layers";
 
 const WALK_DOTS = [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3 }, offset: "0", repeat: "12px" }];
 
@@ -19,19 +29,20 @@ function stepStyle(step, mode) {
   return { strokeColor: color, strokeOpacity: 0.95, strokeWeight: 6 };
 }
 
-function FitToRoute({ points, enabled }) {
+function FitToRoute({ points, enabled, mapKey }) {
   const map = useMap();
   useEffect(() => {
     if (!map || !enabled || points.length < 2) return;
-    const b = boundsOf(points);
-    map.fitBounds(b, { top: 40, bottom: 40, left: 40, right: 40 });
-  }, [map, points, enabled]);
+    const routeKey = points.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join("|");
+    if (fittedRoute.get(mapKey) === routeKey) return; // already shown: keep the user's zoom
+    fittedRoute.set(mapKey, routeKey);
+    map.fitBounds(boundsOf(points), { top: 40, bottom: 40, left: 40, right: 40 });
+  }, [map, points, enabled, mapKey]);
   return null;
 }
 
-function FollowUser({ position, following, onUserPan, zoom }) {
+function FollowUser({ position, following, onUserPan, zoom, mapKey }) {
   const map = useMap();
-  const started = useRef(false);
   useEffect(() => {
     if (!map) return undefined;
     const listener = map.addListener("dragstart", () => onUserPan?.());
@@ -39,30 +50,29 @@ function FollowUser({ position, following, onUserPan, zoom }) {
   }, [map, onUserPan]);
   useEffect(() => {
     if (!map || !position || !following) return;
-    if (!started.current) {
+    if (!followZoomed.has(mapKey)) {
       map.setZoom(zoom);
-      started.current = true;
+      followZoomed.add(mapKey);
     }
     map.panTo(position);
-  }, [map, position, following, zoom]);
+  }, [map, position, following, zoom, mapKey]);
   return null;
 }
 
 // Shows the user's own area when the page opens, and again whenever "My location" is pressed
-function CenterOnUser({ position, enabled, request }) {
+function CenterOnUser({ position, enabled, request, mapKey }) {
   const map = useMap();
-  const centredOnce = useRef(false);
   const lastRequest = useRef(request);
   useEffect(() => {
     if (!map || !position) return;
     const asked = request !== lastRequest.current;
     lastRequest.current = request;
-    if (asked || (enabled && !centredOnce.current)) {
-      centredOnce.current = true;
+    if (asked || (enabled && !centred.has(mapKey))) {
+      centred.add(mapKey);
       map.panTo(position);
       if ((map.getZoom() ?? 0) < 15) map.setZoom(16);
     }
-  }, [map, position, enabled, request]);
+  }, [map, position, enabled, request, mapKey]);
   return null;
 }
 
@@ -86,6 +96,45 @@ function MapLayers({ layers }) {
     });
   }, [map, layers]);
   return null;
+}
+
+// Every bus reporting a live position inside the area on screen (any operator, across England)
+function LiveVehicles({ onStatus }) {
+  const map = useMap();
+  const [view, setView] = useState(null);
+  useEffect(() => {
+    if (!map) return undefined;
+    const read = () => {
+      const b = map.getBounds();
+      if (!b) return;
+      const ne = b.getNorthEast();
+      const sw = b.getSouthWest();
+      setView({ bounds: { west: sw.lng(), south: sw.lat(), east: ne.lng(), north: ne.lat() }, zoom: map.getZoom() });
+    };
+    read();
+    const listener = map.addListener("idle", read);
+    return () => listener.remove();
+  }, [map]);
+
+  const state = useAreaVehicles(view, true);
+  const text = areaStatusText(state);
+  useEffect(() => onStatus(text), [text, onStatus]);
+  useEffect(() => () => onStatus(""), [onStatus]);
+
+  return state.vehicles.slice(0, 400).map((v) => (
+    <AdvancedMarker
+      key={v.vehicleRef || `${v.operatorRef}-${v.route}-${v.lat}`}
+      position={{ lat: v.lat, lng: v.lng }}
+      title={`Bus ${v.route}${v.destination ? ` to ${v.destination}` : ""}`}
+      zIndex={500}
+      anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+    >
+      <span className="map-bus" aria-hidden="true">
+        {Number.isFinite(v.bearing) && <span className="map-bus-arrow" style={{ transform: `rotate(${v.bearing}deg)` }} />}
+        {v.route}
+      </span>
+    </AdvancedMarker>
+  ));
 }
 
 function useInView(ref) {
@@ -112,12 +161,19 @@ export default function PlannerMap({
   onUserPan,
   cycleParks = [],
   theme = "light",
+  mapKey = "planner",
 }) {
   const containerRef = useRef(null);
   const inView = useInView(containerRef);
   const [loadError, setLoadError] = useState("");
-  const [layers, setLayers] = useState({ transit: false, bicycling: false, traffic: false });
+  const [layers, setLayers] = useState(() => ({ transit: false, bicycling: false, traffic: false, buses: false, ...readJSON(LAYERS_KEY, {}) }));
   const [recentre, setRecentre] = useState(0);
+  const [busStatus, setBusStatus] = useState("");
+  const camera = cameras.get(mapKey);
+
+  useEffect(() => {
+    writeJSON(LAYERS_KEY, layers);
+  }, [layers]);
 
   useEffect(() => {
     // Google calls this global when the browser key is rejected (wrong referrer, billing off, ...)
@@ -153,8 +209,9 @@ export default function PlannerMap({
           <Map
             mapId={MAP_ID}
             colorScheme={theme === "dark" ? "DARK" : "LIGHT"}
-            defaultCenter={origin || SUNDERLAND}
-            defaultZoom={13}
+            defaultCenter={camera?.center || origin || SUNDERLAND}
+            defaultZoom={camera?.zoom ?? 13}
+            onCameraChanged={(e) => cameras.set(mapKey, { center: e.detail.center, zoom: e.detail.zoom })}
             gestureHandling={navigating ? "greedy" : "cooperative"}
             mapTypeControl={!navigating}
             streetViewControl={false}
@@ -164,9 +221,10 @@ export default function PlannerMap({
             style={{ width: "100%", height: "100%" }}
           >
             <MapLayers layers={layers} />
-            <FitToRoute points={routePoints} enabled={!navigating} />
-            <CenterOnUser position={userPosition} enabled={!navigating && !option} request={recentre} />
-            {navigating && <FollowUser position={userPosition} following={following} onUserPan={onUserPan} zoom={17} />}
+            <FitToRoute points={routePoints} enabled={!navigating} mapKey={mapKey} />
+            <CenterOnUser position={userPosition} enabled={!navigating && !option} request={recentre} mapKey={mapKey} />
+            {navigating && <FollowUser position={userPosition} following={following} onUserPan={onUserPan} zoom={17} mapKey={mapKey} />}
+            {layers.buses && <LiveVehicles onStatus={setBusStatus} />}
 
             {option?.steps?.map((step, i) => (
               <Polyline key={`${option.mode}-${i}`} path={stepPath(step)} {...stepStyle(step, option.mode)} />
@@ -225,6 +283,7 @@ export default function PlannerMap({
             ["transit", "🚇 Transit"],
             ["bicycling", "🚲 Cycle lanes"],
             ["traffic", "🚦 Traffic"],
+            ["buses", "🚌 Live buses"],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -237,6 +296,10 @@ export default function PlannerMap({
             </button>
           ))}
         </div>
+      )}
+
+      {!loadError && inView && layers.buses && busStatus && (
+        <p className="map-bus-status" role="status" aria-live="polite">{busStatus}</p>
       )}
     </div>
   );

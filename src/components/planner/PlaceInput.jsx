@@ -9,7 +9,7 @@ const DEBOUNCE_MS = 350;
  * Text box with live place suggestions (Google Places via our backend).
  * `quickOptions` (your location, saved places, campuses) show when the box is empty.
  */
-export default function PlaceInput({ label, icon, value, onChange, placeholder, near, quickOptions = [], autoFocus }) {
+export default function PlaceInput({ label, icon, value, onChange, placeholder, near, scope = "local", quickOptions = [], autoFocus }) {
   const inputId = useId();
   const listId = useId();
   const [text, setText] = useState(value?.label ?? "");
@@ -39,7 +39,7 @@ export default function PlaceInput({ label, icon, value, onChange, placeholder, 
       setError("");
       try {
         session.current ??= newSessionToken();
-        const results = await getPlaceSuggestions(query, { session: session.current, near, signal: controller.signal });
+        const results = await getPlaceSuggestions(query, { session: session.current, near, scope, signal: controller.signal });
         setSuggestions(results);
         setActive(results.length ? 0 : -1);
       } catch (err) {
@@ -52,7 +52,7 @@ export default function PlaceInput({ label, icon, value, onChange, placeholder, 
       clearTimeout(timer);
       controller.abort();
     };
-  }, [text, open, near, value?.label]);
+  }, [text, open, near, scope, value?.label]);
 
   const showQuick = open && text.trim().length < MIN_CHARS && quickOptions.length > 0;
   const items = showQuick

@@ -1,27 +1,32 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { readJSON, writeJSON } from "../lib/storage";
 
-const KEY = "uos-theme"; // "light" | "dark" | "system"
+// "light" | "dark" once the user picks one. Until then the device's own setting is used.
+// (Older versions stored "system"; that counts as "not picked yet".)
+const KEY = "uos-theme";
 const listeners = new Set();
 const media = window.matchMedia?.("(prefers-color-scheme: dark)");
 
-function getPreference() {
-  return readJSON(KEY, "system");
+function getChoice() {
+  const stored = readJSON(KEY, null);
+  return stored === "light" || stored === "dark" ? stored : null;
 }
 
-export function resolveTheme(preference = getPreference()) {
-  if (preference === "light" || preference === "dark") return preference;
-  return media?.matches ? "dark" : "light";
+export function resolveTheme(choice = getChoice()) {
+  return choice ?? (media?.matches ? "dark" : "light");
 }
 
 function apply() {
   const resolved = resolveTheme();
-  document.documentElement.dataset.theme = resolved;
+  // Only the colours change: nothing else on the page reacts to the theme
+  if (document.documentElement.dataset.theme !== resolved) document.documentElement.dataset.theme = resolved;
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#0E1524" : "#F57C00");
   listeners.forEach((l) => l());
 }
 
-media?.addEventListener?.("change", apply);
+media?.addEventListener?.("change", () => {
+  if (!getChoice()) apply();
+});
 
 function subscribe(listener) {
   listeners.add(listener);
@@ -29,15 +34,14 @@ function subscribe(listener) {
 }
 
 export function useTheme() {
-  const preference = useSyncExternalStore(subscribe, getPreference);
-  const resolved = useSyncExternalStore(subscribe, () => resolveTheme(preference));
+  const resolved = useSyncExternalStore(subscribe, () => resolveTheme());
 
   useEffect(apply, []);
 
-  const setPreference = useCallback((next) => {
-    writeJSON(KEY, next);
+  const toggle = useCallback(() => {
+    writeJSON(KEY, resolveTheme() === "dark" ? "light" : "dark");
     apply();
   }, []);
 
-  return { preference, resolved, setPreference };
+  return { resolved, toggle };
 }

@@ -5,6 +5,8 @@ import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
 import InstallBanner from './components/InstallBanner';
+import ActiveNavigation from './components/planner/ActiveNavigation';
+import { JourneyProvider } from './context/JourneyContext';
 import Home from './pages/Home';
 import Ticketing from './pages/Ticketing';
 import Zones from './pages/Zones';
@@ -60,7 +62,7 @@ function ReminderToast() {
 
 function App() {
   return (
-    <>
+    <JourneyProvider>
       <a href="#main" className="visually-hidden">Skip to content</a>
       <OfflineBanner />
       <InstallBanner />
@@ -90,7 +92,11 @@ function App() {
       </main>
       <Footer />
       <ReminderToast />
-    </>
+      {/* Directions for a journey in progress: stays on top of whichever page is open */}
+      <ErrorBoundary>
+        <ActiveNavigation />
+      </ErrorBoundary>
+    </JourneyProvider>
   );
 }
 
