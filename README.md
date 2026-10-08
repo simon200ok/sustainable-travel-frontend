@@ -272,8 +272,8 @@ If the backend address changes, also update `connect-src` in the Content Securit
 
 ## Authors
 
-**Simon Ugochukwu Awaogu**
-**Mustapha**
+- **Simon Ugochukwu Awaogu**
+- **Adams Mustapha**
 
 GitHub: [@simon200ok](https://github.com/simon200ok)
 
