@@ -5,9 +5,9 @@ export default function Privacy() {
     <div className="page privacy">
       <section className="page-header">
         <div className="container">
-          <h1 className="page-title">Privacy</h1>
+          <h1 className="page-title">Privacy Policy</h1>
           <p className="page-desc">
-            What the Sustainable Travel Hub does with your data — in plain English. No account, no adverts, no tracking cookies.
+            What the Sustainable Travel Hub does with your data in plain English. No account, no adverts, no tracking cookies.
           </p>
         </div>
       </section>
@@ -82,8 +82,9 @@ export default function Privacy() {
 
           <h2>Questions</h2>
           <p>
-            Contact the team that runs this app, or the University of Sunderland's Data Protection Officer, if you have
-            any questions about your data.
+            {/* Contact the team that runs this app, or the University of Sunderland's Data Protection Officer, if you have
+            any questions about your data. */}
+            Contact the University of Sunderland Developer Society, if you have any questions about your data.
           </p>
         </div>
       </section>

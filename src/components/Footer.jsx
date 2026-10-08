@@ -32,7 +32,7 @@ export default function Footer() {
             <NavLink to="/zones">Travel Zones</NavLink>
             <NavLink to="/map">Live Map</NavLink>
             <NavLink to="/sustainability">Sustainability Tips</NavLink>
-            <NavLink to="/privacy">Privacy</NavLink>
+            <NavLink to="/privacy">Privacy Policy</NavLink>
           </div>
 
           <div className="footer-col">
