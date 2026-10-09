@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { APIProvider, AdvancedMarker, AdvancedMarkerAnchorPoint, Map, Polyline, useMap } from "@vis.gl/react-google-maps";
-import { areaStatusText, useAreaVehicles } from "../../hooks/useAreaVehicles";
+import { areaStatusText, projectVehicle, useAreaVehicles } from "../../hooks/useAreaVehicles";
+import { distanceMeters } from "../../lib/geo";
 import { readJSON, writeJSON } from "../../lib/storage";
 import { MODE_META } from "../../lib/format";
 import { SUNDERLAND } from "../../lib/geo";
@@ -80,8 +81,14 @@ function CenterOnUser({ position, enabled, request, mapKey }) {
 function MapLayers({ layers }) {
   const map = useMap();
   const instances = useRef({});
+  const forMap = useRef(null);
   useEffect(() => {
     if (!map || !window.google?.maps) return;
+    if (forMap.current !== map) {
+      Object.values(instances.current).forEach((layer) => layer.setMap(null));
+      instances.current = {};
+      forMap.current = map;
+    }
     const factories = {
       transit: () => new window.google.maps.TransitLayer(),
       bicycling: () => new window.google.maps.BicyclingLayer(),
@@ -100,9 +107,12 @@ function MapLayers({ layers }) {
 }
 
 // Every bus reporting a live position inside the area on screen (any operator, across England)
-function LiveVehicles({ onStatus }) {
+function LiveVehicles({ onStatus, userPosition, ridingLine }) {
   const map = useMap();
   const [view, setView] = useState(null);
+  const [projected, setProjected] = useState([]);
+  const latest = useRef(new globalThis.Map());
+  const previous = useRef(new globalThis.Map());
   useEffect(() => {
     if (!map) return undefined;
     const read = () => {
@@ -122,7 +132,30 @@ function LiveVehicles({ onStatus }) {
   useEffect(() => onStatus(text), [text, onStatus]);
   useEffect(() => () => onStatus(""), [onStatus]);
 
-  return state.vehicles.slice(0, 400).map((v) => (
+  // Remember each bus's previous report (to work out its speed), then move buses along every few seconds
+  const vehicles = state.vehicles;
+  useEffect(() => {
+    vehicles.forEach((v) => {
+      const key = `${v.operatorRef}-${v.vehicleRef}`;
+      const at = Date.parse(v.recordedAt);
+      const last = latest.current.get(key);
+      if (last && last.at !== at) previous.current.set(key, last);
+      latest.current.set(key, { lat: v.lat, lng: v.lng, at });
+    });
+    const update = () =>
+      setProjected(vehicles.map((v) => projectVehicle(v, previous.current.get(`${v.operatorRef}-${v.vehicleRef}`))));
+    update();
+    if (!vehicles.length) return undefined;
+    const timer = setInterval(update, 3000);
+    return () => clearInterval(timer);
+  }, [vehicles]);
+
+  const shown = projected
+    // The bus you're riding is where your own arrow is, so don't draw a second, lagging copy
+    .filter((v) => !(ridingLine && userPosition && String(v.route).toLowerCase() === String(ridingLine).toLowerCase() && distanceMeters(userPosition, v) < 500))
+    .slice(0, 400);
+
+  return shown.map((v) => (
     <AdvancedMarker
       key={v.vehicleRef || `${v.operatorRef}-${v.route}-${v.lat}`}
       position={{ lat: v.lat, lng: v.lng }}
@@ -182,6 +215,7 @@ function PlannerMapInner({
   cycleParks = [],
   theme = "light",
   mapKey = "planner",
+  ridingLine = null,
 }) {
   const containerRef = useRef(null);
   const inView = useInView(containerRef);
@@ -227,12 +261,22 @@ function PlannerMapInner({
       ) : inView ? (
         <APIProvider apiKey={BROWSER_KEY} language="en-GB" region="GB" onError={() => setLoadError("The map couldn't load. Check your connection.")}>
           <Map
+            // A new map for each theme (Google can't change it on an existing map); the camera is restored
+            key={theme}
             mapId={MAP_ID}
             colorScheme={theme === "dark" ? "DARK" : "LIGHT"}
             defaultCenter={camera?.center || origin || SUNDERLAND}
             defaultZoom={camera?.zoom ?? 13}
-            onCameraChanged={(e) => cameras.set(mapKey, { center: e.detail.center, zoom: e.detail.zoom })}
+            defaultHeading={camera?.heading ?? 0}
+            defaultTilt={camera?.tilt ?? 0}
+            onCameraChanged={(e) =>
+              cameras.set(mapKey, { center: e.detail.center, zoom: e.detail.zoom, heading: e.detail.heading, tilt: e.detail.tilt })
+            }
             gestureHandling={navigating ? "greedy" : "cooperative"}
+            // Two-finger twist rotates the map, two-finger drag up/down tilts it; the compass resets north
+            headingInteractionEnabled
+            tiltInteractionEnabled
+            rotateControl
             mapTypeControl={!navigating}
             streetViewControl={false}
             fullscreenControl
@@ -244,7 +288,7 @@ function PlannerMapInner({
             <FitToRoute points={routePoints} enabled={!navigating} mapKey={mapKey} />
             <CenterOnUser position={userPosition} enabled={!navigating && !option} request={recentre} mapKey={mapKey} />
             {navigating && <FollowUser position={userPosition} following={following} onUserPan={onUserPan} zoom={17} mapKey={mapKey} />}
-            {layers.buses && <LiveVehicles onStatus={setBusStatus} />}
+            {layers.buses && <LiveVehicles onStatus={setBusStatus} userPosition={userPosition} ridingLine={ridingLine} />}
 
             {option?.steps?.map((step, i) => (
               <Polyline key={`${option.mode}-${i}`} path={stepPath(step)} {...stepStyle(step, option.mode)} />

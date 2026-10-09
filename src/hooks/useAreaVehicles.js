@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getVehiclesInArea } from "../lib/api";
+import { distanceMeters } from "../lib/geo";
 import { useOnlineStatus } from "./useOnlineStatus";
 
 export const LIVE_MIN_ZOOM = 12;
@@ -82,6 +83,27 @@ export function useAreaVehicles(view, enabled) {
   }, [enabled, online, viewKey]);
 
   return enabled ? state : { vehicles: [], total: 0, status: "idle", message: "", updatedAt: null };
+}
+
+/**
+ * Bus positions from the Bus Open Data Service are usually 10–60 seconds old, so a bus on the map
+ * trails the real one. Using its last two reports (speed) and its heading, move it forward by
+ * how old the report is (at most 45 s), so it lines up with where the bus really is now.
+ */
+export function projectVehicle(v, previous, nowMs = Date.now()) {
+  const at = Date.parse(v.recordedAt);
+  if (!previous || !Number.isFinite(at) || !Number.isFinite(v.bearing)) return v;
+  const seconds = (at - previous.at) / 1000;
+  if (seconds < 5 || seconds > 180) return v;
+  const speed = distanceMeters(previous, v) / seconds;
+  if (speed < 1 || speed > 35) return v; // stopped, or a GPS jump
+  const ahead = speed * Math.min(45, Math.max(0, (nowMs - at) / 1000));
+  const rad = (v.bearing * Math.PI) / 180;
+  return {
+    ...v,
+    lat: v.lat + (ahead * Math.cos(rad)) / 111_320,
+    lng: v.lng + (ahead * Math.sin(rad)) / (111_320 * Math.cos((v.lat * Math.PI) / 180)),
+  };
 }
 
 export function areaStatusText(state) {

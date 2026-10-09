@@ -11,6 +11,7 @@ const OFF_ROUTE_FIXES = 3;
 const REROUTE_COOLDOWN_MS = 45_000;
 const VEHICLE_SPEED = 4.5; // m/s (~16 km/h): faster than anyone walks, so you're on a vehicle
 const TRANSIT_TOLERANCE_M = 100; // timetable shapes are rough, and GPS on a bus wanders
+const AFTER_RIDE_GRACE_MS = 90_000; // time to get your bearings after stepping off
 // Typical speeds, used to time the "get off soon" alerts when GPS speed isn't available yet
 const TYPICAL_SPEED = { bus: 6, metro: 11, train: 18 };
 const RAIL = new Set(["SUBWAY", "METRO_RAIL", "LIGHT_RAIL", "TRAM", "MONORAIL", "RAIL", "HEAVY_RAIL", "COMMUTER_TRAIN", "HIGH_SPEED_TRAIN", "LONG_DISTANCE_TRAIN"]);
@@ -35,7 +36,7 @@ function vibrate() {
 }
 
 /** Live guidance: tracks progress along `option.steps`, speaks instructions and estimates arrival. */
-export function useTurnByTurn({ option, destination, position, voiceOn, onReroute, onArrive }) {
+export function useTurnByTurn({ option, destination, position, voiceOn, onReroute, onArrive, initialIndex = 0, onIndexChange }) {
   const steps = option.steps;
   const paths = useMemo(() => steps.map(stepPath), [steps]);
   const [index, setIndex] = useState(0);
@@ -49,6 +50,10 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
   const lastReroute = useRef(0);
   const synced = useRef(false);
   const samples = useRef([]);
+  const firstRoute = useRef(true);
+  const stepStartedAt = useRef(Date.now());
+  const leftVehicle = useRef(0);
+  const progress = useRef([]);
   const voice = useRef(voiceOn);
   voice.current = voiceOn;
 
@@ -60,17 +65,35 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
     if (voice.current) speak(text);
   };
 
-  // New route (initial or after re-routing): start from the first step
+  // A route starts (or, after a reload, continues where it was); a new route after going off it
+  // carries on the same journey rather than "starting" again
   useEffect(() => {
-    setIndex(0);
+    const resume = firstRoute.current && initialIndex > 0 && initialIndex < steps.length;
+    const rerouted = !firstRoute.current;
+    firstRoute.current = false;
+    const start = resume ? initialIndex : 0;
+    setIndex(start);
     setOffRoute(false);
     setAlightAlert("");
     announced.current = new Set();
     offCount.current = 0;
-    synced.current = false;
-    if (steps[0]) say("0:start", `Starting ${option.label.toLowerCase()} directions. ${describeStep(steps[0])}`);
+    leftVehicle.current = 0;
+    synced.current = resume;
+    const first = steps[start];
+    if (first) {
+      const intro = resume ? "Continuing your journey." : rerouted ? "New route." : `Starting ${option.label.toLowerCase()} directions.`;
+      say(`${start}:start`, `${intro} ${describeStep(first)}`);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [option]);
+
+  // Remember the current step (so a reload continues from it) and when it began
+  useEffect(() => {
+    stepStartedAt.current = Date.now();
+    progress.current = [];
+    onIndexChange?.(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
 
   // Smoothed speed over the last ~20 seconds (GPS speed is often missing or jumpy)
   useEffect(() => {
@@ -127,6 +150,18 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
       if (!atEnd && !onNext && !boarded) break;
       i += 1;
     }
+    // Clearly on a later part of the route (e.g. got off a stop early or late and walked on):
+    // jump there instead of calling it "off route". Not while riding, as the bus may pass near later steps.
+    if (i === index && distanceToPath(position, paths[index]) > 60 && !(steps[index].transit && moving > 2.5)) {
+      let bestDistance = Infinity;
+      for (let k = index + 2; k < steps.length; k += 1) {
+        const d = distanceToPath(position, paths[k]);
+        if (d < (steps[k].transit ? 60 : 25) && d < bestDistance) {
+          bestDistance = d;
+          i = k;
+        }
+      }
+    }
     if (i !== index) {
       setIndex(i);
       setOffRoute(false);
@@ -138,6 +173,19 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
 
     const step = steps[index];
     const next = steps[index + 1];
+
+    // Left the bus / Metro / train somewhere else (walking, well away from its line): carry on from the next step
+    if (step.transit && next) {
+      const awayFromLine = distanceToPath(position, paths[index]) > 200 && moving < 2.5;
+      leftVehicle.current = awayFromLine ? leftVehicle.current + 1 : 0;
+      if (leftVehicle.current >= OFF_ROUTE_FIXES) {
+        leftVehicle.current = 0;
+        setIndex(index + 1);
+        setAlightAlert("");
+        say(`${index + 1}:start`, `It looks like you've got off. ${describeStep(next)}`);
+        return;
+      }
+    }
 
     // On a bus / Metro / train: warn about 3 minutes and 1 minute before the stop to get off at
     if (step.transit && step.end) {
@@ -179,7 +227,13 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
     const nearTransitAhead = steps.some((s, k) => k > index && s.transit && distanceToPath(position, paths[k]) < TRANSIT_TOLERANCE_M);
     const tolerance = Math.max(50, (position.accuracy || 0) * 1.5);
     const onAVehicle = remainingTransit && moving > VEHICLE_SPEED;
-    const off = nearest > tolerance && !nearTransitAhead && !onAVehicle;
+    const justGotOff = steps[index - 1]?.transit && Date.now() - stepStartedAt.current < AFTER_RIDE_GRACE_MS;
+    // Taking another street but clearly getting closer to where this step ends isn't "off route"
+    const nowMs = Date.now();
+    progress.current = [...progress.current.filter((p) => nowMs - p.at < 30_000), { at: nowMs, d: toEnd }];
+    const oldest = progress.current[0];
+    const headingThere = Number.isFinite(toEnd) && nowMs - oldest.at >= 15_000 && oldest.d - toEnd >= 10;
+    const off = nearest > tolerance && !nearTransitAhead && !onAVehicle && !justGotOff && !headingThere;
     offCount.current = off ? offCount.current + 1 : 0;
     setOffRoute(offCount.current >= OFF_ROUTE_FIXES);
 
@@ -187,7 +241,7 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
     if (offCount.current >= OFF_ROUTE_FIXES && canReroute && destination) {
       lastReroute.current = Date.now();
       setRerouting(true);
-      if (voice.current) speak("You're off the route. Finding a new route.");
+      if (voice.current) speak("You're off the route. Updating your route.");
       planJourney({ label: "Your location", lat: position.lat, lng: position.lng }, destination)
         .then((result) => {
           // Same way of travelling if possible, otherwise the one that arrives first

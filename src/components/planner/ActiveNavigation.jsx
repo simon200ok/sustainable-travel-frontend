@@ -37,7 +37,9 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
   const gpsHeading = live.position?.speed > 0.7 && Number.isFinite(live.position?.heading) ? live.position.heading : null;
   const heading = compass.heading ?? gpsHeading;
 
-  const onReroute = useCallback((next) => updateTrip({ option: next }), [updateTrip]);
+  // A new route continues the same journey (same trip, CO₂ counted once at the end)
+  const onReroute = useCallback((next) => updateTrip({ option: next, stepIndex: 0 }), [updateTrip]);
+  const onIndexChange = useCallback((stepIndex) => updateTrip({ stepIndex }), [updateTrip]);
   const onArrive = useCallback(() => {
     if (recorded.current) return;
     recorded.current = true;
@@ -45,7 +47,16 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
     updateTrip({ arrived: true, minimised: false });
   }, [option, recordJourney, updateTrip]);
 
-  const nav = useTurnByTurn({ option, destination, position: live.position, voiceOn, onReroute, onArrive });
+  const nav = useTurnByTurn({
+    option,
+    destination,
+    position: live.position,
+    voiceOn,
+    onReroute,
+    onArrive,
+    initialIndex: trip.stepIndex ?? 0,
+    onIndexChange,
+  });
   useWakeLock(!nav.arrived);
 
   useEffect(() => stopSpeaking, []);
@@ -140,6 +151,7 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
       <div className="nav-overlay-map">
         <PlannerMap
           mapKey={`nav-${trip.id}`}
+          ridingLine={nav.step?.transit?.line || null}
           origin={origin}
           destination={destination}
           option={option}

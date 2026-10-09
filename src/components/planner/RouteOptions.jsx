@@ -28,6 +28,7 @@ function when(iso) {
 
 function caption(result) {
   const w = result.when;
+  if (w?.past) return `Past timetable: ${w.type === "arrive" ? "arriving by" : "leaving at"} ${when(w.time)}. For reference only.`;
   if (w?.type === "arrive") return `Arriving by ${when(w.time)}. Each option shows when to leave.`;
   if (w?.type === "depart") return `Leaving at ${when(w.time)}. Times include waiting.`;
   return `Leaving now (${formatTime(result.generatedAt)}). Times include waiting.`;
@@ -91,7 +92,7 @@ export default function RouteOptions({ result, selected, onSelect, onStart, star
                   {option.leaveBy && <small>leave {formatTime(option.leaveBy)}</small>}
                 </span>
               </button>
-              {isSelected && (
+              {isSelected && !result.when?.past && (
                 <button type="button" className="btn btn-primary route-start" onClick={() => onStart(option)} disabled={starting}>
                   {starting ? <span className="spinner" /> : "▶"} {starting ? "Updating times…" : `Start ${option.label.toLowerCase()} directions`}
                 </button>

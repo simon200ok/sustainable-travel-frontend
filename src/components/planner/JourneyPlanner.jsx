@@ -305,7 +305,7 @@ export default function JourneyPlanner() {
           )}
           {result && (
             <>
-              {selected && <LeaveByAlert key={selected.mode + selected.leaveBy} option={selected} />}
+              {selected && !result.when?.past && <LeaveByAlert key={selected.mode + selected.leaveBy} option={selected} />}
               <RouteOptions
                 result={result}
                 selected={selected}

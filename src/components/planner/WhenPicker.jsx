@@ -76,7 +76,6 @@ export default function WhenPicker({ value, onChange }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function whenPayload(value) {
   if (value.type === "now" || !value.time) return {};
-  // A departure time that has already passed just means "now"
-  if (value.type === "depart" && value.time.getTime() <= Date.now()) return {};
+  // Past times are planned as asked (to check a journey on an earlier day, up to 7 days back)
   return value.type === "arrive" ? { arriveBy: value.time.toISOString() } : { departAt: value.time.toISOString() };
 }
