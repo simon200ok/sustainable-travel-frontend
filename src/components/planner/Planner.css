@@ -1021,3 +1021,55 @@ body.has-nav-bar {
   flex: none;
   padding: 8px 16px;
 }
+
+/* ── Leave now / Depart at / Arrive by ───────────────────────────────── */
+
+.when-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 12px 0 4px;
+}
+
+.when-choices {
+  margin-bottom: 0;
+}
+
+.when-clock {
+  font-weight: 500;
+}
+
+.when-time input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  color-scheme: light dark;
+}
+
+.when-time input:focus-visible {
+  outline: none;
+  border-color: var(--uos-orange);
+  box-shadow: var(--focus-ring);
+}
+
+.route-option-alight {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ── "Get off soon" alert while riding ───────────────────────────────── */
+
+.nav-alight {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-strong);
+  color: #fff;
+  font-weight: 700;
+}

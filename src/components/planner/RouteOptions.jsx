@@ -18,13 +18,37 @@ function badges(option, options) {
   return out;
 }
 
-export default function RouteOptions({ result, selected, onSelect, onStart }) {
+const dayFormatter = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+// "14:05", or "Sat 10 Oct, 14:05" when it isn't today
+function when(iso) {
+  const d = new Date(iso);
+  return d.toDateString() === new Date().toDateString() ? formatTime(iso) : `${dayFormatter.format(d)}, ${formatTime(iso)}`;
+}
+
+function caption(result) {
+  const w = result.when;
+  if (w?.type === "arrive") return `Arriving by ${when(w.time)}. Each option shows when to leave.`;
+  if (w?.type === "depart") return `Leaving at ${when(w.time)}. Times include waiting.`;
+  return `Leaving now (${formatTime(result.generatedAt)}). Times include waiting.`;
+}
+
+// Where to get off the (last) bus, Metro or train, and the walk from there
+function alighting(option) {
+  const rides = option.steps.filter((s) => s.transit);
+  const last = rides[rides.length - 1]?.transit;
+  if (!last?.arrivalStop) return null;
+  const walk = option.walkAfterSeconds ? ` · ${Math.max(1, Math.round(option.walkAfterSeconds / 60))} min walk after` : "";
+  return `🚏 Get off at ${last.arrivalStop}${walk}${option.transfers ? ` · ${option.transfers} change${option.transfers === 1 ? "" : "s"}` : ""}`;
+}
+
+export default function RouteOptions({ result, selected, onSelect, onStart, starting = false }) {
   const { options, unavailable } = result;
 
   return (
     <div className="route-options">
       <p className="route-options-caption">
-        Times count from when you searched ({formatTime(result.generatedAt)}), including waiting.
+        {caption(result)}
       </p>
       <ul className="route-option-list">
         {options.map((option) => {
@@ -50,9 +74,11 @@ export default function RouteOptions({ result, selected, onSelect, onStart }) {
                     ))}
                   </span>
                   <span className="route-option-meta">
+                    {result.when?.type && result.when.type !== "now" ? `Leave ${formatTime(option.leaveBy || option.departAt)} · ` : ""}
                     Arrive {formatTime(option.arriveAt)} · {formatDistance(option.distanceMeters)}
                     {option.fare && option.fare.amount > 0 && ` · ${formatPrice(option.fare.amount)}`}
                   </span>
+                  {alighting(option) && <span className="route-option-alight">{alighting(option)}</span>}
                   <span className="route-option-eco">
                     {option.co2SavedKg > 0
                       ? `🌱 Saves ${formatKg(option.co2SavedKg)} CO₂ vs driving alone`
@@ -66,8 +92,8 @@ export default function RouteOptions({ result, selected, onSelect, onStart }) {
                 </span>
               </button>
               {isSelected && (
-                <button type="button" className="btn btn-primary route-start" onClick={() => onStart(option)}>
-                  ▶ Start {option.label.toLowerCase()} directions
+                <button type="button" className="btn btn-primary route-start" onClick={() => onStart(option)} disabled={starting}>
+                  {starting ? <span className="spinner" /> : "▶"} {starting ? "Updating times…" : `Start ${option.label.toLowerCase()} directions`}
                 </button>
               )}
             </li>

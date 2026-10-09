@@ -65,11 +65,11 @@ export default function Zones() {
       <section className="section zones-content">
         <div className="container">
           {loading && (
-            <p className="page-desc">Loading zones...</p>
+            <p className="page-loading" role="status">Loading zones...</p>
           )}
 
           {error && (
-            <p className="page-desc">Failed to load zones: {error}</p>
+            <p className="page-error" role="alert">Failed to load zones: {error}</p>
           )}
 
           {!loading && !error && (

@@ -56,7 +56,8 @@ export default function NavigationPanel({ option, destination, position, locatio
         <span className="route-option-icon" style={{ background: meta.color }} aria-hidden="true">{meta.icon}</span>
         <div className="nav-header-text">
           <strong>{option.label} to {destination.label}</strong>
-          <span>Arrive about {formatTime(option.arriveAt)}</span>
+          {/* Live estimate: follows your real progress (and late buses), not just the original plan */}
+          <span>Arrive about {formatTime((nav.eta ?? new Date(option.arriveAt)).toISOString())}</span>
         </div>
         {speechSupported() && (
           <button
@@ -83,6 +84,7 @@ export default function NavigationPanel({ option, destination, position, locatio
       )}
       {nav.rerouting && <p className="nav-status"><span className="spinner" /> Finding a new route…</p>}
       {nav.offRoute && !nav.rerouting && <p className="nav-status nav-status-warn">You seem to be off the route.</p>}
+      {nav.alightAlert && <p className="nav-alight" role="alert">{nav.alightAlert}</p>}
 
       {step && (
         <div className="nav-current">

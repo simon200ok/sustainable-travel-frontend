@@ -30,6 +30,7 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
   const live = useLiveLocation(gpsOn);
   const [voiceOn, setVoiceOn] = useState(() => speechSupported() && trip.voiceOn !== false);
   const [following, setFollowing] = useState(true);
+  const [pannedAt, setPannedAt] = useState(0);
   const [cycleParks, setCycleParks] = useState([]);
   const recorded = useRef(trip.arrived);
 
@@ -48,6 +49,20 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
   useWakeLock(!nav.arrived);
 
   useEffect(() => stopSpeaking, []);
+
+  // After you move the map by hand, it goes back to following you after a few seconds (like Google Maps)
+  useEffect(() => {
+    if (following) return undefined;
+    const timer = setTimeout(() => setFollowing(true), 8000);
+    return () => clearTimeout(timer);
+  }, [following, pannedAt]);
+
+  // Coming back to the app (or to the directions) always shows where you are
+  useEffect(() => {
+    const onVisible = () => document.visibilityState === "visible" && setFollowing(true);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   useEffect(() => {
     getLocations()
@@ -90,23 +105,27 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
 
   const meta = MODE_META[option.mode];
   const step = nav.step;
+  const open = () => {
+    setFollowing(true);
+    updateTrip({ minimised: false });
+  };
 
   if (minimised) {
     return (
       <div className="nav-bar" role="region" aria-label="Journey in progress">
-        <button type="button" className="nav-bar-main" onClick={() => updateTrip({ minimised: false })}>
+        <button type="button" className="nav-bar-main" onClick={open}>
           <span className="nav-bar-icon" style={{ background: meta.color }} aria-hidden="true">
             {step?.transit ? meta.icon : MANEUVER_ICON[step?.maneuver] || meta.icon}
           </span>
           <span className="nav-bar-text">
             <strong>{step ? describeStep(step) : `${option.label} to ${destination.label}`}</strong>
             <span>
-              {nav.distanceToStepEnd != null && !step?.transit ? `${formatDistance(nav.distanceToStepEnd)} · ` : ""}
+              {nav.alightAlert ? `${nav.alightAlert} · ` : nav.distanceToStepEnd != null && !step?.transit ? `${formatDistance(nav.distanceToStepEnd)} · ` : ""}
               {option.label} to {destination.label}
             </span>
           </span>
         </button>
-        <button type="button" className="btn btn-primary nav-bar-open" onClick={() => updateTrip({ minimised: false })}>
+        <button type="button" className="btn btn-primary nav-bar-open" onClick={open}>
           Open
         </button>
         <button type="button" className="nav-icon-btn" onClick={exit} aria-label="End navigation" title="End journey">
@@ -129,7 +148,10 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
           compass={compass}
           navigating
           following={following}
-          onUserPan={() => setFollowing(false)}
+          onUserPan={() => {
+            setFollowing(false);
+            setPannedAt(Date.now());
+          }}
           cycleParks={cycleParks}
           theme={theme}
         />

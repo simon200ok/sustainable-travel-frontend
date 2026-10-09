@@ -13,6 +13,7 @@ import PlaceInput from "./PlaceInput";
 import PlannerMap from "./PlannerMap";
 import QuickTrips from "./QuickTrips";
 import RouteOptions from "./RouteOptions";
+import WhenPicker, { whenPayload } from "./WhenPicker";
 import "./Planner.css";
 
 const YOUR_LOCATION = "Your location";
@@ -38,6 +39,8 @@ export default function JourneyPlanner() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
   const [scope, setScope] = useState("local");
+  const [when, setWhen] = useState({ type: "now", time: null });
+  const [starting, setStarting] = useState(false);
   const [cycleParks, setCycleParks] = useState([]);
   const [savedMsg, setSavedMsg] = useState("");
   const resultsRef = useRef(null);
@@ -100,6 +103,7 @@ export default function JourneyPlanner() {
         const data = await planJourney(
           { label: from.label, lat: from.lat, lng: from.lng },
           { label: to.label, lat: to.lat, lng: to.lng },
+          whenPayload(when),
         );
         setResult(data);
         setSelected(data.options[0] ?? null);
@@ -110,8 +114,45 @@ export default function JourneyPlanner() {
         setSearching(false);
       }
     },
-    [origin, destination, online],
+    [origin, destination, online, when],
   );
+
+  // Changing the time after a search updates the results (after a short pause while typing)
+  const searchRef = useRef(search);
+  searchRef.current = search;
+  const hasResult = Boolean(result);
+  const whenKey = `${when.type}|${when.time?.getTime() ?? ""}`;
+  useEffect(() => {
+    if (!hasResult) return undefined;
+    const timer = setTimeout(() => searchRef.current(), 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [whenKey]);
+
+  // "Leave now" plans are refreshed when you press Start if they're a few minutes old,
+  // so the bus times and arrival time match the moment you actually set off
+  async function start(option) {
+    if (trip && !trip.arrived && !window.confirm(`End your journey to ${trip.destination.label} and start this one?`)) return;
+    let chosen = option;
+    const stale = result?.when?.type !== "depart" && result?.when?.type !== "arrive" && Date.now() - Date.parse(result?.generatedAt) > 3 * 60_000;
+    if (stale && online) {
+      setStarting(true);
+      try {
+        const fresh = await planJourney(
+          { label: origin.label, lat: origin.lat, lng: origin.lng },
+          { label: destination.label, lat: destination.lat, lng: destination.lng },
+        );
+        setResult(fresh);
+        chosen = fresh.options.find((o) => o.mode === option.mode) || option;
+      } catch {
+        // Offline or busy: start with the plan we have
+      } finally {
+        setStarting(false);
+      }
+    }
+    setSelected(chosen);
+    startTrip(origin, destination, chosen);
+  }
 
   const quickOriginOptions = useMemo(
     () => [
@@ -205,6 +246,8 @@ export default function JourneyPlanner() {
           />
         </div>
 
+        <WhenPicker value={when} onChange={setWhen} />
+
         <div className="planner-actions">
           <button type="button" className="btn btn-ghost" onClick={locate} disabled={locating}>
             {locating ? <span className="spinner" /> : "📍"} Use my location
@@ -263,11 +306,8 @@ export default function JourneyPlanner() {
                 result={result}
                 selected={selected}
                 onSelect={setSelected}
-                onStart={(option) => {
-                  if (trip && !trip.arrived && !window.confirm(`End your journey to ${trip.destination.label} and start this one?`)) return;
-                  setSelected(option);
-                  startTrip(origin, destination, option);
-                }}
+                onStart={start}
+                starting={starting}
               />
             </>
           )}

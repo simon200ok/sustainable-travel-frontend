@@ -80,10 +80,11 @@ export function getPlace(placeId, { session } = {}) {
   return request(`/journey/place/${encodeURIComponent(placeId)}${params}`, { cacheMs: 86_400_000 });
 }
 
-export const planJourney = (origin, destination) =>
+// when: {} (leave now), { departAt: ISO } or { arriveBy: ISO }
+export const planJourney = (origin, destination, when = {}) =>
   request("/journey/plan", {
     method: "POST",
-    body: { origin, destination },
+    body: { origin, destination, ...when },
     timeoutMs: 25_000,
   });
 
