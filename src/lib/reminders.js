@@ -24,21 +24,28 @@ export async function ensureNotificationPermission() {
   return Notification.permission;
 }
 
+/**
+ * A phone notification (if allowed). The phone plays its usual notification sound or buzz, which
+ * is the only way to get a buzz on iPhone: iOS 16.4+ allows notifications for installed (home
+ * screen) web apps, but not vibration. Android also vibrates using the pattern below.
+ */
+export async function showSystemNotification(title, body, { tag, vibrate = [400, 200, 400] } = {}) {
+  if (!notificationsSupported() || Notification.permission !== "granted") return false;
+  const options = { body, tag, renotify: Boolean(tag), vibrate, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png" };
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    if (reg) await reg.showNotification(title, options);
+    else new Notification(title, options);
+    return true;
+  } catch {
+    return false; // The in-app alert is shown anyway
+  }
+}
+
 async function fire(reminder) {
   window.dispatchEvent(new CustomEvent("uos-reminder", { detail: reminder }));
   navigator.vibrate?.([200, 100, 200]);
-  if (notificationsSupported() && Notification.permission === "granted") {
-    try {
-      const reg = await navigator.serviceWorker?.getRegistration();
-      if (reg) {
-        await reg.showNotification(reminder.title, { body: reminder.body, tag: reminder.id, icon: "/icons/icon-192.png" });
-      } else {
-        new Notification(reminder.title, { body: reminder.body, tag: reminder.id });
-      }
-    } catch {
-      // In-app alert already shown
-    }
-  }
+  await showSystemNotification(reminder.title, reminder.body, { tag: reminder.id, vibrate: [200, 100, 200] });
   cancelReminder(reminder.id);
 }
 

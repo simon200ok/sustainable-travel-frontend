@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { planJourney } from "../lib/api";
 import { distanceMeters } from "../lib/geo";
+import { showSystemNotification } from "../lib/reminders";
 import { describeStep, distanceToPath, stepPath } from "../lib/navigation";
 import { speak, spokenDistance } from "../lib/speech";
 
@@ -51,10 +52,11 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
   const voice = useRef(voiceOn);
   voice.current = voiceOn;
 
-  const say = (key, text, { buzz = false } = {}) => {
+  const say = (key, text, { buzz = false, notify = null } = {}) => {
     if (announced.current.has(key)) return;
     announced.current.add(key);
     if (buzz) vibrate();
+    if (notify) showSystemNotification(notify, text, { tag: "uos-get-off" });
     if (voice.current) speak(text);
   };
 
@@ -147,10 +149,16 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
       const bell = kind === "bus";
       if ((secondsLeft != null && secondsLeft <= 70) || remaining <= typical * 55) {
         setAlightAlert(`🔔 Get off at ${stop} in about 1 minute${bell ? " — press the bell" : ""}`);
-        say(`${index}:alight1`, `Get ready to get off. ${stop} is in about 1 minute.${bell ? " Press the bell now." : ""}`, { buzz: true });
+        say(`${index}:alight1`, `Get ready to get off. ${stop} is in about 1 minute.${bell ? " Press the bell now." : ""}`, {
+          buzz: true,
+          notify: `🔔 Get off at ${stop} in 1 minute`,
+        });
       } else if ((secondsLeft != null && secondsLeft <= 190) || remaining <= typical * 150) {
         setAlightAlert(`🚏 Get off at ${stop} in about 3 minutes`);
-        say(`${index}:alight3`, `In about 3 minutes, get off at ${stop}.${bell ? " Press the bell when you're close." : ""}`, { buzz: true });
+        say(`${index}:alight3`, `In about 3 minutes, get off at ${stop}.${bell ? " Press the bell when you're close." : ""}`, {
+          buzz: true,
+          notify: `🚏 Get off at ${stop} in 3 minutes`,
+        });
       }
       setOffRoute(false);
       offCount.current = 0;

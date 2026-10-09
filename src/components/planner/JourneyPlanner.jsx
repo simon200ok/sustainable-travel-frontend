@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useJourney } from "../../context/JourneyContext";
 import { getLocations, planJourney } from "../../lib/api";
+import { ensureNotificationPermission } from "../../lib/reminders";
 import { getCurrentPosition, locationPermissionState } from "../../lib/geo";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
 import { useLiveLocation } from "../../hooks/useLiveLocation";
@@ -133,6 +134,9 @@ export default function JourneyPlanner() {
   // so the bus times and arrival time match the moment you actually set off
   async function start(option) {
     if (trip && !trip.arrived && !window.confirm(`End your journey to ${trip.destination.label} and start this one?`)) return;
+    // Bus / Metro / train trips: ask (once, while the user is tapping Start) to allow the
+    // "get off soon" notifications. Asking must happen straight from a tap on iPhone.
+    if (option.steps?.some((s) => s.transit)) await ensureNotificationPermission();
     let chosen = option;
     const stale = result?.when?.type !== "depart" && result?.when?.type !== "arrive" && Date.now() - Date.parse(result?.generatedAt) > 3 * 60_000;
     if (stale && online) {
