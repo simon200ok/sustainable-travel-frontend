@@ -91,6 +91,8 @@ export const changeAdminPassword = (currentPassword, newPassword, code) =>
 
 export const getAdminStats = () => adminRequest("/admin/stats");
 
+export const getUsage = () => adminRequest("/admin/usage");
+
 export function listMessages({ status = "new", q = "", page = 1 } = {}) {
   const params = new URLSearchParams({ status, page: String(page) });
   if (q.trim()) params.set("q", q.trim());

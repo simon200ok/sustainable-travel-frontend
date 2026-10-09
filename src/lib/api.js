@@ -95,6 +95,9 @@ export const getFares = () => request("/fares", { cacheMs: 300_000 });
 export const logGreenJourney = (mode, distanceMeters) =>
   request("/impact/journeys", { method: "POST", body: { mode, distance_m: Math.round(distanceMeters) } });
 
+// Anonymous visitor counting (see lib/usage.js)
+export const recordVisit = (visit) => request("/usage/visit", { method: "POST", body: visit, timeoutMs: 8_000 });
+
 export const getCommunityImpact = () => request("/impact/summary", { cacheMs: 120_000 });
 
 export const getOperators = (type) =>

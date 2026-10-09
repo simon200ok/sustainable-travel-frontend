@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -17,6 +17,7 @@ import Contact from './pages/Contact';
 import Accessibility from './pages/Accessibility';
 import { restoreReminders } from './lib/reminders';
 import { speak } from './lib/speech';
+import { countVisit } from './lib/usage';
 import './components/AppBanners.css';
 
 // The admin area is a separate download: ordinary visitors never load its code
@@ -32,6 +33,15 @@ function NotFound() {
       </p>
     </div>
   );
+}
+
+// Anonymous visitor counting: one call per page opened (see the Privacy page)
+function VisitCounter() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    countVisit(pathname);
+  }, [pathname]);
+  return null;
 }
 
 // Shows leave-by reminders in the app (alongside any system notification)
@@ -92,6 +102,7 @@ function App() {
       </main>
       <Footer />
       <ReminderToast />
+      <VisitCounter />
       {/* Directions for a journey in progress: stays on top of whichever page is open */}
       <ErrorBoundary>
         <ActiveNavigation />

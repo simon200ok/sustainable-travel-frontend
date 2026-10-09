@@ -670,3 +670,53 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Visitors ────────────────────────────────────────────────────────── */
+
+.admin-usage {
+  margin-top: 28px;
+}
+
+.admin-usage > h2 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+
+.admin-panel h3 {
+  font-size: 1rem;
+}
+
+.usage-bars {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+.usage-bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.usage-bar span {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--uos-orange);
+}
+
+.usage-details {
+  width: 100%;
+}
+
+.usage-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent-text);
+}

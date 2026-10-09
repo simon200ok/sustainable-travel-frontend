@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getAdminStats, sendTestAlert, syncFaresNow } from '../../lib/adminApi';
 import { MODE_META, formatKg } from '../../lib/format';
+import AdminUsage from './AdminUsage';
 
 const dateTime = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 const fmt = (iso) => (iso ? dateTime.format(new Date(iso)) : '—');
@@ -142,6 +143,8 @@ export default function AdminDashboard() {
           </p>
         </section>
       </div>
+
+      <AdminUsage />
     </div>
   );
 }

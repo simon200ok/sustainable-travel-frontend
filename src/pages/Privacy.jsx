@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import UsageChoice from '../components/UsageChoice';
 import './Privacy.css';
 
 export default function Privacy() {
@@ -41,6 +42,7 @@ export default function Privacy() {
             <li>Saved Home and Work places and starred trips</li>
             <li>Your CO₂ tracker, streak and journey history</li>
             <li>Leave-by reminders, and your light/dark theme choice</li>
+            <li>The dates this browser was last counted as a visitor (see below)</li>
           </ul>
           <p>
             These stay in your browser's storage and never reach our server. Clearing this site's data in your browser
@@ -52,6 +54,19 @@ export default function Privacy() {
             When you finish a green journey, the app sends only the travel mode and distance, so we can show the Team UoS
             total. It contains no name, account, device ID or location.
           </p>
+
+          <h2>Counting visitors</h2>
+          <p>
+            To know how many people use the app, your browser remembers the date it was last counted. When you open a
+            page, it sends us only the page name and yes/no answers to “first visit today, this week, this month, or
+            ever?”, and whether you're using the installed app. Our server adds these to daily totals. We don't use
+            cookies, device IDs or analytics companies, and we don't store your IP address with these counts, so the
+            numbers can't be linked to you or used to follow you.
+          </p>
+          <p>
+            You can switch this off at any time. Browsers that send a Global Privacy Control signal are never counted.
+          </p>
+          <UsageChoice />
 
           <h2>Contact form</h2>
           <p>
