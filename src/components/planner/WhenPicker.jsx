@@ -36,9 +36,6 @@ export default function WhenPicker({ value, onChange }) {
     else onChange({ type, time: value.time ?? roundedLater(type === "arrive" ? 60 : 15) });
   }
 
-  const min = toLocalInput(clock);
-  const max = toLocalInput(new Date(clock.getTime() + 59 * 86_400_000));
-
   return (
     <div className="when-picker">
       <div className="planner-scope when-choices" role="radiogroup" aria-label="When are you travelling?">
@@ -59,13 +56,11 @@ export default function WhenPicker({ value, onChange }) {
       {value.type !== "now" && (
         <label className="when-time" htmlFor={inputId}>
           <span className="visually-hidden">{value.type === "arrive" ? "Arrival time" : "Departure time"}</span>
+          {/* No min/step: browsers reject times off their own grid ("enter a valid value"); past departures mean "now" and the server checks the 60-day limit */}
           <input
             id={inputId}
             type="datetime-local"
             value={value.time ? toLocalInput(value.time) : ""}
-            min={min}
-            max={max}
-            step={300}
             onChange={(e) => {
               const time = e.target.value ? new Date(e.target.value) : null;
               if (time && !Number.isNaN(time.getTime())) onChange({ type: value.type, time });
