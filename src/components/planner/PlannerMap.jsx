@@ -7,6 +7,7 @@ import { MODE_META } from "../../lib/format";
 import { SUNDERLAND } from "../../lib/geo";
 import { boundsOf, decodePolyline, stepPath } from "../../lib/navigation";
 import ErrorBoundary from "../ErrorBoundary";
+import CycleLanes from "./CycleLanes";
 import UserLocationMarker from "./UserLocationMarker";
 
 const BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY;
@@ -91,7 +92,7 @@ function MapLayers({ layers }) {
     }
     const factories = {
       transit: () => new window.google.maps.TransitLayer(),
-      bicycling: () => new window.google.maps.BicyclingLayer(),
+      // Cycle lanes are drawn by <CycleLanes> instead: Google's bicycling layer forces a light map
       traffic: () => new window.google.maps.TrafficLayer(),
     };
     Object.entries(factories).forEach(([name, create]) => {
@@ -223,6 +224,7 @@ function PlannerMapInner({
   const [layers, setLayers] = useState(() => ({ transit: false, bicycling: false, traffic: false, buses: false, ...readJSON(LAYERS_KEY, {}) }));
   const [recentre, setRecentre] = useState(0);
   const [busStatus, setBusStatus] = useState("");
+  const [cycleStatus, setCycleStatus] = useState("");
   const camera = cameras.get(mapKey);
 
   useEffect(() => {
@@ -288,6 +290,7 @@ function PlannerMapInner({
             <FitToRoute points={routePoints} enabled={!navigating} mapKey={mapKey} />
             <CenterOnUser position={userPosition} enabled={!navigating && !option} request={recentre} mapKey={mapKey} />
             {navigating && <FollowUser position={userPosition} following={following} onUserPan={onUserPan} zoom={17} mapKey={mapKey} />}
+            {layers.bicycling && <CycleLanes theme={theme} onStatus={setCycleStatus} />}
             {layers.buses && <LiveVehicles onStatus={setBusStatus} userPosition={userPosition} ridingLine={ridingLine} />}
 
             {option?.steps?.map((step, i) => (
@@ -362,8 +365,12 @@ function PlannerMapInner({
         </div>
       )}
 
-      {!loadError && inView && layers.buses && busStatus && (
-        <p className="map-bus-status" role="status" aria-live="polite">{busStatus}</p>
+      {!loadError && inView && ((layers.buses && busStatus) || (layers.bicycling && cycleStatus)) && (
+        <p className="map-bus-status" role="status" aria-live="polite">
+          {layers.buses && busStatus}
+          {layers.buses && busStatus && layers.bicycling && cycleStatus && <br />}
+          {layers.bicycling && cycleStatus}
+        </p>
       )}
     </div>
   );

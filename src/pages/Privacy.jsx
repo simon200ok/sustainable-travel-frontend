@@ -93,6 +93,8 @@ export default function Privacy() {
             </li>
             <li>
               <strong>OpenStreetMap</strong> — map tiles on the Live Map page are loaded from OpenStreetMap's servers.
+              Cycle lanes on the journey-planner map also come from OpenStreetMap, but our server fetches those, so your
+              browser doesn't contact OpenStreetMap for them.
             </li>
             <li>
               <strong>Bus Open Data Service</strong> (Department for Transport) — live bus positions and fares. Our server
