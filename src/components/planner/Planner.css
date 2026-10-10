@@ -1108,3 +1108,10 @@ body.has-nav-bar {
   color: #fff;
   font-weight: 700;
 }
+
+/* During a trip the top of the map holds Back and Re-centre, so map notes sit above the layer buttons */
+.nav-overlay .map-bus-status {
+  top: auto;
+  bottom: 112px;
+  max-width: calc(100% - 24px);
+}

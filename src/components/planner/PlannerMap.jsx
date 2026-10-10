@@ -223,6 +223,11 @@ function PlannerMapInner({
   const [layers, setLayers] = useState(() => ({ transit: false, bicycling: false, traffic: false, buses: false, ...readJSON(LAYERS_KEY, {}) }));
   const [recentre, setRecentre] = useState(0);
   const [busStatus, setBusStatus] = useState("");
+  // Google's cycle-lane layer switches to its own light map when it's the only Google layer on,
+  // even in dark mode (Transit or Traffic keep it dark). The app can't change that, so say so.
+  const cycleNote = theme === "dark" && layers.bicycling && !layers.transit && !layers.traffic
+    ? "🚲 Google shows cycle lanes on a light map"
+    : "";
   const camera = cameras.get(mapKey);
 
   useEffect(() => {
@@ -362,8 +367,12 @@ function PlannerMapInner({
         </div>
       )}
 
-      {!loadError && inView && layers.buses && busStatus && (
-        <p className="map-bus-status" role="status" aria-live="polite">{busStatus}</p>
+      {!loadError && inView && ((layers.buses && busStatus) || cycleNote) && (
+        <p className="map-bus-status" role="status" aria-live="polite">
+          {cycleNote}
+          {cycleNote && layers.buses && busStatus && <br />}
+          {layers.buses && busStatus}
+        </p>
       )}
     </div>
   );
