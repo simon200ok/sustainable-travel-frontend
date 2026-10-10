@@ -96,9 +96,6 @@ export const getFares = () => request("/fares", { cacheMs: 300_000 });
 export const logGreenJourney = (mode, distanceMeters) =>
   request("/impact/journeys", { method: "POST", body: { mode, distance_m: Math.round(distanceMeters) } });
 
-// Cycle tracks and lanes (OpenStreetMap) for one map tile: x = floor(lng / 0.04), y = floor(lat / 0.025)
-export const getCycleways = (x, y) => request(`/map/cycleways?x=${x}&y=${y}`, { cacheMs: 3_600_000, timeoutMs: 40_000 });
-
 // Anonymous visitor counting (see lib/usage.js)
 export const recordVisit = (visit) => request("/usage/visit", { method: "POST", body: visit, timeoutMs: 8_000 });
 
