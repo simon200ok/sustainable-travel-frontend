@@ -88,13 +88,32 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
     return () => document.body.classList.remove(cls);
   }, [minimised]);
 
-  // Escape minimises (it never ends the journey)
+  // The phone's Back gesture/button (and Escape) closes the directions to the bar at the bottom
+  // instead of leaving the page. The journey keeps going either way.
+  const ownsHistoryEntry = useRef(false);
   useEffect(() => {
     if (minimised) return undefined;
-    const onKey = (e) => e.key === "Escape" && updateTrip({ minimised: true });
+    window.history.pushState({ ...window.history.state, uosDirections: true }, "");
+    ownsHistoryEntry.current = true;
+    const onPop = () => {
+      ownsHistoryEntry.current = false;
+      updateTrip({ minimised: true });
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [minimised, updateTrip]);
+
+  const minimise = useCallback(() => {
+    if (ownsHistoryEntry.current) window.history.back(); // the popstate above then minimises
+    else updateTrip({ minimised: true });
+  }, [updateTrip]);
+
+  useEffect(() => {
+    if (minimised) return undefined;
+    const onKey = (e) => e.key === "Escape" && minimise();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [minimised, updateTrip]);
+  }, [minimised, minimise]);
 
   const toggleVoice = () => {
     const next = !voiceOn;
@@ -106,6 +125,10 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
 
   const exit = () => {
     stopSpeaking();
+    if (ownsHistoryEntry.current) {
+      ownsHistoryEntry.current = false;
+      window.history.back(); // drop the entry added for the directions screen
+    }
     endTrip();
   };
 
@@ -149,6 +172,15 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
   return (
     <div className="nav-overlay" role="dialog" aria-modal="true" aria-label={`Directions to ${destination.label}`}>
       <div className="nav-overlay-map">
+        <button
+          type="button"
+          className="nav-back-btn"
+          onClick={minimise}
+          aria-label="Back to the app. Your journey keeps going"
+          title="Back to the app — your journey keeps going"
+        >
+          <span aria-hidden="true">←</span> Back
+        </button>
         <PlannerMap
           mapKey={`nav-${trip.id}`}
           ridingLine={nav.step?.transit?.line || null}
@@ -182,7 +214,6 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
         nav={nav}
         voiceOn={voiceOn}
         onToggleVoice={toggleVoice}
-        onMinimise={() => updateTrip({ minimised: true })}
         onExit={exit}
         impact={stats}
       />

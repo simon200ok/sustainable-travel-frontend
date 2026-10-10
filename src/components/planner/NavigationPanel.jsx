@@ -21,7 +21,7 @@ export const MANEUVER_ICON = {
 };
 
 // Guidance runs in ActiveNavigation (so it continues on every page); this panel only shows it
-export default function NavigationPanel({ option, destination, position, locationError, onRetryLocation, nav, voiceOn, onToggleVoice, onMinimise, onExit, impact }) {
+export default function NavigationPanel({ option, destination, position, locationError, onRetryLocation, nav, voiceOn, onToggleVoice, onExit, impact }) {
   const [showAll, setShowAll] = useState(false);
   const meta = MODE_META[option.mode];
   const step = nav.step;
@@ -70,9 +70,6 @@ export default function NavigationPanel({ option, destination, position, locatio
             {voiceOn ? "🔊" : "🔇"}
           </button>
         )}
-        <button type="button" className="nav-icon-btn" onClick={onMinimise} aria-label="Minimise directions and use the rest of the app" title="Minimise (the journey keeps going)">
-          ▾
-        </button>
         <button type="button" className="nav-icon-btn" onClick={onExit} aria-label="End navigation" title="End journey">
           ✕
         </button>
