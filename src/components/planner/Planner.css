@@ -82,6 +82,12 @@
   background: none;
   color: var(--uos-grey-mid);
   font-size: 0.9rem;
+  /* Big enough to tap (WCAG 2.2 target size) */
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 4px;
 }
 
@@ -1114,4 +1120,132 @@ body.has-nav-bar {
   top: auto;
   bottom: 112px;
   max-width: calc(100% - 24px);
+}
+
+/* ── Journey details timeline ────────────────────────────────────────── */
+
+.route-details-toggle {
+  display: block;
+  min-height: 36px;
+  padding: 6px 12px;
+  margin: 6px auto 0;
+}
+
+.journey-details {
+  margin-top: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.journey-details-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+}
+
+.journey-details-summary span {
+  color: var(--text-secondary);
+}
+
+.journey-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.journey-timeline > li {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 14px;
+}
+
+/* The line joining the steps */
+.journey-timeline > li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.journey-timeline > li.tl-ride:not(:last-child)::before {
+  width: 4px;
+  left: 14px;
+  background: var(--tl-color, var(--uos-orange));
+}
+
+.journey-timeline > li.tl-move:not(:last-child)::before {
+  background: repeating-linear-gradient(to bottom, var(--text-secondary) 0 4px, transparent 4px 8px);
+}
+
+.tl-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  font-size: 1rem;
+  z-index: 1;
+}
+
+.tl-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.tl-body p {
+  margin: 0 0 3px;
+  font-size: 0.86rem;
+}
+
+.tl-title {
+  font-weight: 700;
+}
+
+.tl-line {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.tl-time {
+  display: inline-block;
+  min-width: 44px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-sub {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.tl-directions summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.tl-directions ol {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 0.84rem;
+}
+
+.tl-directions li {
+  margin-bottom: 3px;
 }

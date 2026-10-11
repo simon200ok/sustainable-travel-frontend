@@ -1,4 +1,6 @@
-import { MODE_META, formatDistance, formatDuration, formatKg, formatPrice, formatTime } from "../../lib/format";
+import { useEffect, useState } from "react";
+import { MODE_META, formatDistance, formatDuration, formatKg, formatPrice, formatTime, formatWhen } from "../../lib/format";
+import JourneyDetails from "./JourneyDetails";
 
 const UNAVAILABLE_REASON = {
   walking: "Too far to walk",
@@ -18,17 +20,13 @@ function badges(option, options) {
   return out;
 }
 
-const dayFormatter = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
-
-// "14:05", or "Sat 10 Oct, 14:05" when it isn't today
-function when(iso) {
-  const d = new Date(iso);
-  return d.toDateString() === new Date().toDateString() ? formatTime(iso) : `${dayFormatter.format(d)}, ${formatTime(iso)}`;
-}
+const when = formatWhen;
 
 function caption(result) {
   const w = result.when;
-  if (w?.past) return `Past timetable: ${w.type === "arrive" ? "arriving by" : "leaving at"} ${when(w.time)}. For reference only.`;
+  if (w?.past) {
+    return `Past timetable: ${w.type === "arrive" ? "arriving by" : "leaving at"} ${when(w.time)}. Trips still under way can be joined; finished ones can be opened to see every step.`;
+  }
   if (w?.type === "arrive") return `Arriving by ${when(w.time)}. Each option shows when to leave.`;
   if (w?.type === "depart") return `Leaving at ${when(w.time)}. Times include waiting.`;
   return `Leaving now (${formatTime(result.generatedAt)}). Times include waiting.`;
@@ -45,6 +43,16 @@ function alighting(option) {
 
 export default function RouteOptions({ result, selected, onSelect, onStart, starting = false }) {
   const { options, unavailable } = result;
+  const [detailsFor, setDetailsFor] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
+  const past = Boolean(result.when?.past);
+
+  // Past timetables: keep "under way" / "finished" up to date
+  useEffect(() => {
+    if (!past) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, [past]);
 
   return (
     <div className="route-options">
@@ -55,6 +63,10 @@ export default function RouteOptions({ result, selected, onSelect, onStart, star
         {options.map((option) => {
           const meta = MODE_META[option.mode];
           const isSelected = selected?.mode === option.mode;
+          // From a past timetable: still under way (can be joined) or already finished (can be viewed)
+          const finished = past && Date.parse(option.arriveAt) <= now;
+          const underWay = past && !finished;
+          const showDetails = isSelected && detailsFor === option.mode;
           return (
             <li key={option.mode}>
               <button
@@ -92,11 +104,23 @@ export default function RouteOptions({ result, selected, onSelect, onStart, star
                   {option.leaveBy && <small>leave {formatTime(option.leaveBy)}</small>}
                 </span>
               </button>
-              {isSelected && !result.when?.past && (
+              {isSelected && !finished && (
                 <button type="button" className="btn btn-primary route-start" onClick={() => onStart(option)} disabled={starting}>
-                  {starting ? <span className="spinner" /> : "▶"} {starting ? "Updating times…" : `Start ${option.label.toLowerCase()} directions`}
+                  {starting ? <span className="spinner" /> : "▶"}{" "}
+                  {starting ? "Updating times…" : underWay ? "Join this trip (already under way)" : `Start ${option.label.toLowerCase()} directions`}
                 </button>
               )}
+              {isSelected && (
+                <button
+                  type="button"
+                  className={finished ? "btn btn-primary route-start" : "link-button route-details-toggle"}
+                  aria-expanded={showDetails}
+                  onClick={() => setDetailsFor(showDetails ? null : option.mode)}
+                >
+                  {showDetails ? "Hide journey details" : finished ? "📋 View journey details (trip has finished)" : "📋 Journey details"}
+                </button>
+              )}
+              {showDetails && <JourneyDetails option={option} />}
             </li>
           );
         })}

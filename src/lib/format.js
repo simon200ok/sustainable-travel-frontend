@@ -14,6 +14,15 @@ export function formatDistance(meters) {
   return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`;
 }
 
+const dayFormatter = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+// "14:05", or "Sat 10 Oct, 14:05" when it isn't today
+export function formatWhen(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toDateString() === new Date().toDateString() ? formatTime(iso) : `${dayFormatter.format(d)}, ${formatTime(iso)}`;
+}
+
 export const formatPrice = (value) => `£${Number(value).toFixed(2)}`;
 
 export function formatKg(kg) {
