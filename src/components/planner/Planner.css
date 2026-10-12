@@ -1249,3 +1249,30 @@ body.has-nav-bar {
 .tl-directions li {
   margin-bottom: 3px;
 }
+
+.when-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.when-now-btn {
+  min-height: 38px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.when-now-btn:hover {
+  border-color: var(--uos-orange);
+}
+
+.when-now-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
