@@ -13,12 +13,6 @@ function toLocalInput(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-function nowToTheMinute() {
-  const d = new Date();
-  d.setSeconds(0, 0);
-  return d;
-}
-
 function roundedLater(minutes) {
   const d = new Date(Date.now() + minutes * 60_000);
   d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
@@ -60,28 +54,19 @@ export default function WhenPicker({ value, onChange }) {
         ))}
       </div>
       {value.type !== "now" && (
-        <div className="when-time">
-          <label htmlFor={inputId} className="visually-hidden">{value.type === "arrive" ? "Arrival time" : "Departure time"}</label>
-          {/* No min/step: browsers reject times off their own grid ("enter a valid value"); the server checks the allowed range */}
+        <label className="when-time" htmlFor={inputId}>
+          <span className="visually-hidden">{value.type === "arrive" ? "Arrival time" : "Departure time"}</span>
+          {/* No min/step: browsers reject times off their own grid ("enter a valid value"); past departures mean "now" and the server checks the 60-day limit */}
           <input
             id={inputId}
             type="datetime-local"
             value={value.time ? toLocalInput(value.time) : ""}
             onChange={(e) => {
-              // The phone's own "Reset"/"Clear" in the date picker empties the box: go back to the current time
-              const time = e.target.value ? new Date(e.target.value) : nowToTheMinute();
-              if (!Number.isNaN(time.getTime())) onChange({ type: value.type, time });
+              const time = e.target.value ? new Date(e.target.value) : null;
+              if (time && !Number.isNaN(time.getTime())) onChange({ type: value.type, time });
             }}
           />
-          <button
-            type="button"
-            className="when-now-btn"
-            onClick={() => onChange({ type: value.type, time: nowToTheMinute() })}
-            aria-label={`Set the ${value.type === "arrive" ? "arrival" : "departure"} time to now`}
-          >
-            ↺ Now
-          </button>
-        </div>
+        </label>
       )}
     </div>
   );
