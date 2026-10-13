@@ -46,9 +46,9 @@ export function locationHelp() {
     return "On Android: swipe down and turn on Location, then tap the icon next to the web address → Permissions → Location → Allow.";
   }
   if (browser === "chrome") {
-    return "In Chrome: click the icon to the left of the web address → Site settings → Location → Allow (no need to reload: the app notices). A crossed-out location icon at the right of the address bar means Chrome hid the question: click it and choose Allow. On Windows also check Settings → Privacy & security → Location.";
+    return "In Chrome: click the icon to the left of the web address → Site settings → Location → Allow, then click “I've allowed it. Try again”. A crossed-out location icon at the right of the address bar means Chrome hid the question: click it and choose Allow. On Windows also check Settings → Privacy & security → Location.";
   }
-  return "Click the icon next to the web address, set Location to “Allow” (no need to reload: the app notices). On Windows also check Settings → Privacy & security → Location.";
+  return "Click the icon next to the web address, set Location to “Allow”, then click “I've allowed it. Try again”. On Windows also check Settings → Privacy & security → Location.";
 }
 
 // Plain-English help for each way location can fail
