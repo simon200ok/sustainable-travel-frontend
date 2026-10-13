@@ -6,8 +6,8 @@ export default function OfflineBanner() {
   if (online) return null;
   return (
     <div className="app-banner app-banner-offline" role="status">
-      <span aria-hidden="true">📴</span> You're offline. Saved trips, campus info and ticket prices still work —
-      live journeys and buses will return when you reconnect.
+      <span aria-hidden="true">📴</span> You're offline. Saved trips, campus info and ticket prices still work.
+      Live journeys and buses will return when you reconnect.
     </div>
   );
 }

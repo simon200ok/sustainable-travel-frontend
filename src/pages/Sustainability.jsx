@@ -202,7 +202,7 @@ export default function Sustainability() {
             <h2>Make the Pledge</h2>
             <p>
               Commit to using sustainable transport at least 3 days a week. Whether it's walking,
-              cycling, Metro, bus, or train — every green journey counts toward a cleaner Sunderland.
+              cycling, Metro, bus, or train, every green journey counts toward a cleaner Sunderland.
             </p>
             <div className="pledge-options">
               <div className="pledge-option">

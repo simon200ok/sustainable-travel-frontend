@@ -20,7 +20,7 @@ export default function Home() {
             Where are you <span className="hero-accent">travelling</span> today?
           </h1>
           <p className="hero-desc">
-            Compare walking, cycling, Metro, bus, train and car share — with live times and the CO₂ you save.
+            Compare walking, cycling, Metro, bus, train and car share with live times and the CO₂ you save.
           </p>
         </div>
       </section>

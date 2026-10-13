@@ -225,7 +225,7 @@ export default function TravelMap() {
         <div className="container">
           <h1 className="page-title">Live Map</h1>
           <p className="page-desc">
-            Campuses, cycle parking and transport links — with the 700 and 701 university buses moving live.
+            Campuses, cycle parking and transport links with the 700 and 701 university buses moving live.
             Turn on <strong>All buses in view</strong> to see every bus moving anywhere in England.
           </p>
         </div>
@@ -288,7 +288,7 @@ export default function TravelMap() {
           {showLive && (
             <p className={`live-status ${status.error ? 'live-status-error' : ''}`} role="status" aria-live="polite">
               {!online
-                ? '📴 Live buses paused — you are offline.'
+                ? '📴 Live buses paused. You are offline.'
                 : status.loading
                   ? 'Loading live buses…'
                   : status.error

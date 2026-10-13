@@ -33,7 +33,7 @@ export default function AdminAccount({ admin, onSignOut }) {
         <dl className="admin-meta">
           <dt>Name</dt><dd>{admin.name}</dd>
           <dt>Email</dt><dd>{admin.email}</dd>
-          <dt>Last sign-in</dt><dd>{admin.lastLoginAt ? dateTime.format(new Date(admin.lastLoginAt)) : '—'}</dd>
+          <dt>Last sign-in</dt><dd>{admin.lastLoginAt ? dateTime.format(new Date(admin.lastLoginAt)) : ': '}</dd>
           <dt>Two-factor</dt><dd>On ✓</dd>
         </dl>
         <p className="admin-muted">

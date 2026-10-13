@@ -196,7 +196,7 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
       const stop = step.transit.arrivalStop || "your stop";
       const bell = kind === "bus";
       if ((secondsLeft != null && secondsLeft <= 70) || remaining <= typical * 55) {
-        setAlightAlert(`🔔 Get off at ${stop} in about 1 minute${bell ? " — press the bell" : ""}`);
+        setAlightAlert(`🔔 Get off at ${stop} in about 1 minute${bell ? " . Press the bell" : ""}`);
         say(`${index}:alight1`, `Get ready to get off. ${stop} is in about 1 minute.${bell ? " Press the bell now." : ""}`, {
           buzz: true,
           notify: `🔔 Get off at ${stop} in 1 minute`,

@@ -22,7 +22,7 @@ export default function ImpactCard() {
         <h2 id="impact-title" className="impact-title">Your green travel</h2>
         {stats.totalJourneys === 0 ? (
           <p className="impact-empty">
-            Start directions for a walk, cycle, bus, Metro or train trip and we'll track the CO₂ you save — right here on your device.
+            Start directions for a walk, cycle, bus, Metro or train trip and we'll track the CO₂ you save, right here on your device.
           </p>
         ) : (
           <>

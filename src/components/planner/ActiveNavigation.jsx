@@ -177,7 +177,7 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
           className="nav-back-btn"
           onClick={minimise}
           aria-label="Back to the app. Your journey keeps going"
-          title="Back to the app — your journey keeps going"
+          title="Back to the app. Your journey keeps going"
         >
           <span aria-hidden="true">←</span> Back
         </button>

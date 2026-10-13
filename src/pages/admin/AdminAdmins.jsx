@@ -74,7 +74,7 @@ export default function AdminAdmins() {
         <h2>Admin accounts</h2>
         <p className="admin-muted">
           {data.usableAdmins} admin{data.usableAdmins === 1 ? '' : 's'} can sign in right now. The app never allows the
-          last one to be disabled or deleted — keep at least two, so access isn't lost if someone leaves or loses their phone.
+          last one to be disabled or deleted. Keep at least two, so access isn't lost if someone leaves or loses their phone.
         </p>
         <div className="admin-table-wrap">
           <table className="admin-table">

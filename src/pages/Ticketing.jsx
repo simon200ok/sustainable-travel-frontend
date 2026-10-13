@@ -257,7 +257,7 @@ export default function Ticketing() {
               <h3>Student Tip</h3>
               <p>
                 If you're 21 or under, single bus and Metro journeys are just £1. Carry your University of Sunderland
-                student ID, and consider weekly tickets if you travel most days — they're cheaper than daily tickets.
+                student ID, and consider weekly tickets if you travel most days as they're cheaper than daily tickets.
               </p>
             </div>
           </div>

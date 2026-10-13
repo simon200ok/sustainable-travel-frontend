@@ -85,7 +85,7 @@ export default function AdminLogin({ onSignedIn }) {
               <input id="admin-password" type="password" autoComplete="current-password" required maxLength={72} value={password} onChange={(e) => setPassword(e.target.value)} />
               <label htmlFor="admin-code">6-digit code from your authenticator app</label>
               {codeInput}
-              <p className="admin-hint">First time signing in? Leave the code empty — you'll set up your authenticator app next.</p>
+              <p className="admin-hint">First time signing in? Leave the code empty. You will set up your authenticator app next.</p>
               {error && <p className="admin-error" role="alert">{error}</p>}
               <button type="submit" className="btn btn-primary" disabled={busy}>
                 {busy ? <span className="spinner" /> : null} Sign in

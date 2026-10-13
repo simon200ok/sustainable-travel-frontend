@@ -33,7 +33,7 @@ export default function AdminContent() {
       </div>
       <p className="admin-muted admin-content-note">
         Changes go live on the website within about 5 minutes and are recorded in the activity log. Bus fares aren't
-        edited here — they update automatically every morning from the operators' official data.
+        edited here. They update automatically every morning from the operators' official data.
       </p>
       <Component />
     </div>

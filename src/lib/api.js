@@ -16,7 +16,7 @@ export class ApiError extends Error {
 }
 
 function friendlyMessage(status, serverMessage) {
-  if (status === 429) return "You're doing that a lot — please wait a moment and try again.";
+  if (status === 429) return "You're doing that a lot. Please wait a moment and try again.";
   if (status === 413) return "That request was too large.";
   if (status >= 500 && !serverMessage) return "Our server is having a moment. Please try again shortly.";
   return serverMessage || "Something went wrong. Please try again.";

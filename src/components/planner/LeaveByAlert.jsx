@@ -33,7 +33,7 @@ export default function LeaveByAlert({ option }) {
   let headline;
   let tone = "info";
   if (leaveIn <= 0) {
-    headline = minutesUntil(transit.departureTime, now) > 0 ? `Leave now to catch ${service}` : `${service} has probably left — search again for the next one`;
+    headline = minutesUntil(transit.departureTime, now) > 0 ? `Leave now to catch ${service}` : `${service} has probably left. Search again for the next one`;
     tone = "error";
   } else if (leaveIn <= REMIND_BEFORE_MIN) {
     headline = `Leave in ${leaveIn} min to catch ${service}`;
@@ -53,7 +53,7 @@ export default function LeaveByAlert({ option }) {
     const at = new Date(new Date(option.leaveBy).getTime() - REMIND_BEFORE_MIN * 60_000).toISOString();
     const ok = scheduleReminder({ id: reminderId, at, title: `Leave in ${REMIND_BEFORE_MIN} min`, body });
     setArmed(ok);
-    if (!ok) setMessage("It's too late for a reminder — head off now.");
+    if (!ok) setMessage("It's too late for a reminder. Head off now.");
     else if (permission === "granted") setMessage(`We'll notify you at ${formatTime(at)}. Keep the app open in the background.`);
     else setMessage(`We'll alert you in the app at ${formatTime(at)}. Notifications are blocked, so use “Add to calendar” for a phone alarm.`);
   }

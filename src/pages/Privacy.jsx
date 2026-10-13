@@ -108,7 +108,7 @@ export default function Privacy() {
             {/* Contact the team that runs this app, or the University of Sunderland's Data Protection Officer, if you have
             any questions about your data. */}
             Contact the University of Sunderland Developer Society if you have any questions about your data, or to ask
-            us to delete a message you sent — use the <Link to="/contact?topic=privacy">contact form</Link>.
+            us to delete a message you sent, use the <Link to="/contact?topic=privacy">contact form</Link>.
           </p>
         </div>
       </section>

@@ -164,8 +164,8 @@ export default function Zones() {
                   <h3>Student Zone Tip</h3>
                   <p>
                     Trips around Sunderland, including between City Campus and St Peter's, stay in <strong>Zone C</strong>.
-                    From Newcastle city centre (Zone A) you pass through Zone B, so you need an all-zones ticket —
-                    or tap with Pop Pay As You Go and pay no more than £2.50. If you're 21 or under, it's £1.
+                    From Newcastle city centre (Zone A) you pass through Zone B, so you need an all-zones ticket.
+                    Alternatively, tap with Pop Pay As You Go and pay no more than £2.50. If you're 21 or under, it's £1.
                   </p>
                 </div>
                 <div className="zone-tip-card">

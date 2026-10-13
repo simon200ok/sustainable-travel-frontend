@@ -51,7 +51,7 @@ export default function AdminAudit() {
             {result.items.map((e) => (
               <tr key={e.id} className={e.action.includes('failed') || e.action.includes('blocked') ? 'admin-row-warn' : ''}>
                 <td>{dateTime.format(new Date(e.at))}</td>
-                <td>{e.admin || '—'}</td>
+                <td>{e.admin || ': '}</td>
                 <td>{ACTION_LABEL[e.action] || e.action}</td>
                 <td>{e.detail}</td>
               </tr>

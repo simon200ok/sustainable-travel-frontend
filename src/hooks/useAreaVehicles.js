@@ -113,7 +113,7 @@ export function areaStatusText(state) {
     case "loading":
       return "Loading live buses…";
     case "offline":
-      return "📴 Live buses paused — you are offline.";
+      return "📴 Live buses paused. You are offline.";
     case "error":
       return `⚠️ ${state.message}`;
     case "ok":

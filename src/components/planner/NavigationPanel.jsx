@@ -36,7 +36,7 @@ export default function NavigationPanel({ option, destination, position, locatio
             Travelling by {option.label.toLowerCase()} saved <strong>{formatKg(option.co2SavedKg)} CO₂</strong> compared with driving alone.
           </p>
         ) : (
-          <p>Thanks for sharing the car — fewer cars means cleaner air for Sunderland.</p>
+          <p>Thanks for sharing the car. Fewer cars means cleaner air for Sunderland.</p>
         )}
         {impact && (
           <p className="nav-arrived-stats">

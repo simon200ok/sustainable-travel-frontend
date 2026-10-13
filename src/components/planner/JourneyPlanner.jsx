@@ -354,7 +354,7 @@ export default function JourneyPlanner() {
               className="link-button"
               onClick={() => {
                 saveTrip(origin, destination, selected ? { mode: selected.mode, minutes: selected.minutes } : null);
-                setSavedMsg("Trip saved — it's now a one-tap button, even offline.");
+                setSavedMsg("Trip saved. It's now a one-tap button, even offline.");
               }}
             >
               ⭐ Save this trip
@@ -388,7 +388,7 @@ export default function JourneyPlanner() {
           {!result && !searching && (
             <div className="planner-empty">
               <h3>{scope === "uk" ? "Plan a green journey anywhere in the UK" : "Compare every green way to travel"}</h3>
-              <p>Walk, cycle, Metro, bus, train and car share — with live times, CO₂ saved and turn-by-turn voice directions.</p>
+              <p>Walk, cycle, Metro, bus, train and car share, with live times, CO₂ saved and turn-by-turn voice directions.</p>
             </div>
           )}
         </div>
