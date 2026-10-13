@@ -22,14 +22,38 @@ export function detectPlatform() {
   return "desktop";
 }
 
+export function detectBrowser() {
+  const ua = navigator.userAgent || "";
+  if (/CriOS/i.test(ua)) return "chrome-ios";
+  if (/FxiOS|Firefox/i.test(ua)) return "firefox";
+  if (/Edg/i.test(ua)) return "edge";
+  if (/Chrome|Chromium/i.test(ua)) return "chrome";
+  if (/Safari/i.test(ua)) return "safari";
+  return "other";
+}
+
+// Where to switch location on, for this phone/computer and browser
+export function locationHelp() {
+  const platform = detectPlatform();
+  const browser = detectBrowser();
+  if (platform === "ios") {
+    if (browser === "chrome-ios") {
+      return "On iPhone: Settings → Chrome → Location → “While Using the App”, and turn on Precise Location. Then come back, reload and tap Allow.";
+    }
+    return "On iPhone: Settings → Privacy & Security → Location Services → turn it on, then set Safari Websites (or your browser) to “While Using”.";
+  }
+  if (platform === "android") {
+    return "On Android: swipe down and turn on Location, then tap the icon next to the web address → Permissions → Location → Allow.";
+  }
+  if (browser === "chrome") {
+    return "In Chrome: click the icon to the left of the web address → Site settings → Location → Allow, then reload. A crossed-out location icon at the right of the address bar means Chrome hid the question: click it and choose Allow. On Windows also check Settings → Privacy & security → Location.";
+  }
+  return "Click the icon next to the web address, set Location to “Allow”, then reload. On Windows also check Settings → Privacy & security → Location.";
+}
+
 // Plain-English help for each way location can fail
 export function locationErrorInfo(code) {
-  const platform = detectPlatform();
-  const enableSteps = {
-    ios: "On iPhone: Settings → Privacy & Security → Location Services → turn it on, then set Safari Websites (or your browser) to “While Using”.",
-    android: "On Android: swipe down and turn on Location, then allow this site in your browser’s site settings (tap the icon next to the address).",
-    desktop: "Click the icon next to the web address, set Location to “Allow”, then reload. On Windows also check Settings → Privacy & security → Location.",
-  }[platform];
+  const enableSteps = locationHelp();
 
   switch (code) {
     case "denied":
@@ -45,7 +69,7 @@ export function locationErrorInfo(code) {
     case "timeout":
       return {
         title: "Finding your location is taking too long",
-        message: "Move somewhere with a clearer view of the sky or a better connection, then try again.",
+        message: `Make sure location is allowed for this site, then try again. ${enableSteps}`,
       };
     case "insecure":
       return {
@@ -80,14 +104,30 @@ export async function locationPermissionState() {
   }
 }
 
-export function getCurrentPosition(options = {}) {
+function requestPosition(options) {
   return new Promise((resolve, reject) => {
-    if (!window.isSecureContext) return reject("insecure");
-    if (!("geolocation" in navigator)) return reject("unsupported");
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
       (err) => reject(geolocationErrorCode(err)),
-      { enableHighAccuracy: true, timeout: 12_000, maximumAge: 30_000, ...options },
+      options,
     );
   });
+}
+
+/**
+ * Where the user is, as quickly as the browser can say.
+ * 1. A quick, approximate fix (Wi-Fi/mobile network, or one from the last 5 minutes). Some
+ *    browsers (Chrome especially) are slow to give a "precise" fix and would otherwise time out.
+ * 2. If that fails (other than being blocked), one more go asking for a precise fix, with longer.
+ * The live tracking that follows (useLiveLocation) then sharpens the position.
+ */
+export async function getCurrentPosition() {
+  if (!window.isSecureContext) throw "insecure";
+  if (!("geolocation" in navigator)) throw "unsupported";
+  try {
+    return await requestPosition({ enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 });
+  } catch (code) {
+    if (code === "denied") throw code;
+    return requestPosition({ enableHighAccuracy: true, maximumAge: 0, timeout: 20_000 });
+  }
 }

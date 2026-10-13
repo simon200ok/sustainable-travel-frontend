@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useJourney } from "../../context/JourneyContext";
 import { getLocations, planJourney } from "../../lib/api";
 import { ensureNotificationPermission } from "../../lib/reminders";
-import { getCurrentPosition, locationPermissionState } from "../../lib/geo";
+import { getCurrentPosition, locationHelp, locationPermissionState } from "../../lib/geo";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
 import { useLiveLocation } from "../../hooks/useLiveLocation";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
@@ -52,19 +52,36 @@ export default function JourneyPlanner() {
   const gpsHeading = live.position?.speed > 0.7 && Number.isFinite(live.position?.heading) ? live.position.heading : null;
   const heading = compass.heading ?? gpsHeading;
 
+  const [locatingSlow, setLocatingSlow] = useState(false);
+
   const locate = useCallback(async () => {
     setLocating(true);
     setLocationError(null);
+    // If the browser hasn't answered after a few seconds, its question may be hidden: say where to look
+    const slowTimer = setTimeout(() => setLocatingSlow(true), 5000);
     try {
       const pos = await getCurrentPosition();
-      setOrigin({ label: YOUR_LOCATION, lat: pos.lat, lng: pos.lng, isCurrent: true });
+      setOrigin({ label: YOUR_LOCATION, lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, isCurrent: true });
       setTracking(true);
     } catch (code) {
       setLocationError(code);
     } finally {
+      clearTimeout(slowTimer);
+      setLocatingSlow(false);
       setLocating(false);
     }
   }, []);
+
+  // The first fix may be approximate (it's quicker): sharpen the start point as better GPS readings arrive
+  useEffect(() => {
+    const p = live.position;
+    if (!p || !Number.isFinite(p.accuracy)) return;
+    setOrigin((o) => {
+      if (!o?.isCurrent) return o;
+      if (Number.isFinite(o.accuracy) && p.accuracy > o.accuracy * 0.7) return o;
+      return { ...o, lat: p.lat, lng: p.lng, accuracy: p.accuracy };
+    });
+  }, [live.position]);
 
   // Start point defaults to the user's current location (asks the browser on first visit)
   useEffect(() => {
@@ -261,6 +278,16 @@ export default function JourneyPlanner() {
           </button>
         </div>
 
+        {locating && locatingSlow && (
+          <div className="notice notice-info" role="status">
+            <span className="notice-icon" aria-hidden="true">📍</span>
+            <div>
+              <strong>Waiting for your browser to share your location…</strong>
+              If you can't see a question asking to use your location, the browser may have hidden it. {locationHelp()} You
+              can also type a starting point.
+            </div>
+          </div>
+        )}
         {locationError && !origin && (
           <LocationNotice code={locationError} onRetry={locate} onDismiss={() => setLocationError(null)} />
         )}
