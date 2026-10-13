@@ -1249,14 +1249,3 @@ body.has-nav-bar {
 .tl-directions li {
   margin-bottom: 3px;
 }
-
-/* "Still blocked" feedback inside the location notice */
-.notice-still-blocked {
-  display: block;
-  margin: 6px 0;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--uos-red-light);
-  color: var(--uos-red);
-  font-weight: 700;
-}

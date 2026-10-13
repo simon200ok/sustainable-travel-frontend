@@ -53,8 +53,6 @@ export default function JourneyPlanner() {
   const heading = compass.heading ?? gpsHeading;
 
   const [locatingSlow, setLocatingSlow] = useState(false);
-  const [stillBlocked, setStillBlocked] = useState(false);
-  const [canWatchPermission, setCanWatchPermission] = useState(true);
 
   const locate = useCallback(async () => {
     setLocating(true);
@@ -65,7 +63,6 @@ export default function JourneyPlanner() {
       const pos = await getCurrentPosition();
       setOrigin({ label: YOUR_LOCATION, lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, isCurrent: true });
       setTracking(true);
-      setStillBlocked(false);
       return null;
     } catch (code) {
       setLocationError(code);
@@ -77,12 +74,12 @@ export default function JourneyPlanner() {
     }
   }, []);
 
-  // "I've allowed it — try again": if it's still blocked, say so clearly rather than showing the same box again
+  // "I've allowed it. Try again": if location now works, use it straight away (nothing typed is lost).
+  // If it's still blocked, reload the page (some browsers only pick up a changed setting after a reload).
   const retryLocate = useCallback(async () => {
-    const wasBlocked = locationError === "denied";
     const code = await locate();
-    setStillBlocked(wasBlocked && code === "denied");
-  }, [locate, locationError]);
+    if (code === "denied") window.location.reload();
+  }, [locate]);
 
   // As soon as the user switches location to Allow in the browser's settings, use it (no reload needed)
   const needsLocation = !origin && locationError === "denied";
@@ -94,10 +91,7 @@ export default function JourneyPlanner() {
       if (state !== "denied") locate();
     }).then((unsubscribe) => {
       if (cancelled) unsubscribe?.();
-      else {
-        stop = unsubscribe;
-        setCanWatchPermission(Boolean(unsubscribe));
-      }
+      else stop = unsubscribe;
     });
     return () => {
       cancelled = true;
@@ -325,13 +319,7 @@ export default function JourneyPlanner() {
           <LocationNotice
             code={locationError}
             onRetry={retryLocate}
-            stillBlocked={stillBlocked}
-            // Only where the browser can't tell us the setting changed (mainly Safari / iPhone)
-            onReload={canWatchPermission ? undefined : () => window.location.reload()}
-            onDismiss={() => {
-              setLocationError(null);
-              setStillBlocked(false);
-            }}
+            onDismiss={() => setLocationError(null)}
           />
         )}
         {error && (
