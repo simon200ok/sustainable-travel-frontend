@@ -46,9 +46,9 @@ export function locationHelp() {
     return "On Android: swipe down and turn on Location, then tap the icon next to the web address → Permissions → Location → Allow.";
   }
   if (browser === "chrome") {
-    return "In Chrome: click the icon to the left of the web address → Site settings → Location → Allow, then reload. A crossed-out location icon at the right of the address bar means Chrome hid the question: click it and choose Allow. On Windows also check Settings → Privacy & security → Location.";
+    return "In Chrome: click the icon to the left of the web address → Site settings → Location → Allow (no need to reload: the app notices). A crossed-out location icon at the right of the address bar means Chrome hid the question: click it and choose Allow. On Windows also check Settings → Privacy & security → Location.";
   }
-  return "Click the icon next to the web address, set Location to “Allow”, then reload. On Windows also check Settings → Privacy & security → Location.";
+  return "Click the icon next to the web address, set Location to “Allow” (no need to reload: the app notices). On Windows also check Settings → Privacy & security → Location.";
 }
 
 // Plain-English help for each way location can fail
@@ -93,6 +93,23 @@ export function geolocationErrorCode(error) {
   if (error.code === 2) return "unavailable";
   if (error.code === 3) return "timeout";
   return "unknown";
+}
+
+/**
+ * Calls onChange("granted" | "prompt" | "denied") whenever the user changes this site's location
+ * setting in the browser. Resolves to an unsubscribe function, or null if the browser can't
+ * report changes (then a reload is the only way to notice).
+ */
+export async function watchLocationPermission(onChange) {
+  try {
+    const status = await navigator.permissions?.query({ name: "geolocation" });
+    if (!status || !("onchange" in status)) return null;
+    const handler = () => onChange(status.state);
+    status.addEventListener("change", handler);
+    return () => status.removeEventListener("change", handler);
+  } catch {
+    return null;
+  }
 }
 
 export async function locationPermissionState() {

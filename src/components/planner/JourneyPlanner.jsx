@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useJourney } from "../../context/JourneyContext";
 import { getLocations, planJourney } from "../../lib/api";
 import { ensureNotificationPermission } from "../../lib/reminders";
-import { getCurrentPosition, locationHelp, locationPermissionState } from "../../lib/geo";
+import { getCurrentPosition, locationHelp, locationPermissionState, watchLocationPermission } from "../../lib/geo";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
 import { useLiveLocation } from "../../hooks/useLiveLocation";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
@@ -53,6 +53,8 @@ export default function JourneyPlanner() {
   const heading = compass.heading ?? gpsHeading;
 
   const [locatingSlow, setLocatingSlow] = useState(false);
+  const [stillBlocked, setStillBlocked] = useState(false);
+  const [canWatchPermission, setCanWatchPermission] = useState(true);
 
   const locate = useCallback(async () => {
     setLocating(true);
@@ -63,14 +65,45 @@ export default function JourneyPlanner() {
       const pos = await getCurrentPosition();
       setOrigin({ label: YOUR_LOCATION, lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, isCurrent: true });
       setTracking(true);
+      setStillBlocked(false);
+      return null;
     } catch (code) {
       setLocationError(code);
+      return code;
     } finally {
       clearTimeout(slowTimer);
       setLocatingSlow(false);
       setLocating(false);
     }
   }, []);
+
+  // "I've allowed it — try again": if it's still blocked, say so clearly rather than showing the same box again
+  const retryLocate = useCallback(async () => {
+    const wasBlocked = locationError === "denied";
+    const code = await locate();
+    setStillBlocked(wasBlocked && code === "denied");
+  }, [locate, locationError]);
+
+  // As soon as the user switches location to Allow in the browser's settings, use it (no reload needed)
+  const needsLocation = !origin && locationError === "denied";
+  useEffect(() => {
+    if (!needsLocation) return undefined;
+    let stop = null;
+    let cancelled = false;
+    watchLocationPermission((state) => {
+      if (state !== "denied") locate();
+    }).then((unsubscribe) => {
+      if (cancelled) unsubscribe?.();
+      else {
+        stop = unsubscribe;
+        setCanWatchPermission(Boolean(unsubscribe));
+      }
+    });
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [needsLocation, locate]);
 
   // The first fix may be approximate (it's quicker): sharpen the start point as better GPS readings arrive
   useEffect(() => {
@@ -289,7 +322,17 @@ export default function JourneyPlanner() {
           </div>
         )}
         {locationError && !origin && (
-          <LocationNotice code={locationError} onRetry={locate} onDismiss={() => setLocationError(null)} />
+          <LocationNotice
+            code={locationError}
+            onRetry={retryLocate}
+            stillBlocked={stillBlocked}
+            // Only where the browser can't tell us the setting changed (mainly Safari / iPhone)
+            onReload={canWatchPermission ? undefined : () => window.location.reload()}
+            onDismiss={() => {
+              setLocationError(null);
+              setStillBlocked(false);
+            }}
+          />
         )}
         {error && (
           <div className="notice notice-error" role="alert">
