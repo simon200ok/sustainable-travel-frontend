@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
 import InstallBanner from './components/InstallBanner';
+import UpdateBanner from './components/UpdateBanner';
 import ActiveNavigation from './components/planner/ActiveNavigation';
 import { JourneyProvider } from './context/JourneyContext';
 import Home from './pages/Home';
@@ -102,6 +103,7 @@ function App() {
       </main>
       <Footer />
       <ReminderToast />
+      <UpdateBanner />
       <VisitCounter />
       {/* Directions for a journey in progress: stays on top of whichever page is open */}
       <ErrorBoundary>

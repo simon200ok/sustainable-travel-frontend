@@ -74,3 +74,28 @@
   font-size: 0.9rem;
   max-width: calc(100vw - 32px);
 }
+
+/* "A new version is ready": full width on phones so the message stays on one or two lines */
+.update-banner {
+  left: 12px;
+  right: 12px;
+  transform: none;
+  margin: 0 auto;
+  width: auto;
+  max-width: 520px;
+}
+
+.update-banner-text {
+  flex: 1;
+}
+
+.update-banner-close {
+  color: var(--text-on-dark);
+  min-width: 32px;
+  min-height: 32px;
+}
+
+/* Sits above the journey bar when that's showing */
+body.has-nav-bar .update-banner {
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}

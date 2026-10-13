@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets/|icons/|images/|sw\\.js|workbox-.*\\.js|manifest\\.webmanifest|theme-init\\.js|favicon\\.ico|robots\\.txt).*)",
+      "source": "/((?!assets/|icons/|images/|sw\\.js|workbox-.*\\.js|manifest\\.webmanifest|theme-init\\.js|favicon\\.ico|robots\\.txt|version\\.json).*)",
       "destination": "/index.html"
     }
   ],
@@ -24,6 +24,10 @@
     {
       "source": "/sw.js",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/version.json",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
     },
     {
       "source": "/assets/(.*)",
