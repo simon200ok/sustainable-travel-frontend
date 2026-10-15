@@ -726,8 +726,15 @@
   color: var(--text-secondary);
 }
 
-.nav-step-list .done {
-  opacity: 0.5;
+/* Steps already done: readable (no fading), marked with a tick */
+.nav-step-list .done .nav-step-btn {
+  color: var(--text-secondary);
+}
+
+.nav-step-list .done .nav-step-btn::before {
+  content: "✓ ";
+  color: var(--uos-green);
+  font-weight: 700;
 }
 
 .nav-step-list .current {
@@ -1248,4 +1255,75 @@ body.has-nav-bar {
 
 .tl-directions li {
   margin-bottom: 3px;
+}
+
+/* ── Looking at another step (live guidance carries on underneath) ───── */
+
+.nav-viewing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 2px dashed var(--accent-strong);
+  border-radius: var(--radius-sm);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.nav-viewing span {
+  flex: 1 1 180px;
+}
+
+.nav-viewing .btn {
+  padding: 8px 14px;
+}
+
+.nav-current-viewing {
+  outline: 2px dashed var(--accent-strong);
+  outline-offset: 3px;
+}
+
+/* Where to get on and off */
+.nav-stop {
+  margin: 4px 0 0;
+  font-size: 0.92rem;
+}
+
+.nav-stop-label {
+  display: inline-block;
+  min-width: 56px;
+  padding: 1px 6px;
+  margin-right: 4px;
+  border-radius: 4px;
+  background: var(--accent-strong);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Every step in the list can be tapped to look at it */
+.nav-step-btn {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-step-btn:hover,
+.nav-step-list .viewing .nav-step-btn {
+  background: var(--bg-secondary);
+}
+
+.nav-step-list .current {
+  color: var(--accent-text);
 }

@@ -274,11 +274,6 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
     arrived,
     alightAlert,
     eta,
-    goTo: (i) => {
-      const clamped = Math.max(0, Math.min(steps.length - 1, i));
-      setIndex(clamped);
-      if (voice.current) speak(describeStep(steps[clamped]));
-    },
   };
 }
 

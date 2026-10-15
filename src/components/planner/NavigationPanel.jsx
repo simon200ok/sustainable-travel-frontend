@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { formatDistance, formatKg, formatTime, MODE_META } from "../../lib/format";
+import { formatDistance, formatKg, formatTime, MODE_META, transitLabel } from "../../lib/format";
 import { describeStep } from "../../lib/navigation";
-import { speechSupported } from "../../lib/speech";
+import { speak, speechSupported } from "../../lib/speech";
 import LocationNotice from "../LocationNotice";
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -23,8 +23,20 @@ export const MANEUVER_ICON = {
 // Guidance runs in ActiveNavigation (so it continues on every page); this panel only shows it
 export default function NavigationPanel({ option, destination, position, locationError, onRetryLocation, nav, voiceOn, onToggleVoice, onExit, impact }) {
   const [showAll, setShowAll] = useState(false);
+  // Looking at another step (Previous / Next / the step list) never moves live guidance,
+  // which keeps tracking where you really are; "Back to current step" returns to it
+  const [viewIndex, setViewIndex] = useState(null);
   const meta = MODE_META[option.mode];
-  const step = nav.step;
+  const steps = option.steps;
+  const viewing = viewIndex != null && viewIndex !== nav.index && viewIndex < steps.length;
+  const shownIndex = viewing ? viewIndex : nav.index;
+  const step = steps[shownIndex];
+  const nextStep = steps[shownIndex + 1];
+  const view = (i) => {
+    const clamped = Math.max(0, Math.min(steps.length - 1, i));
+    setViewIndex(clamped === nav.index ? null : clamped);
+    if (voiceOn) speak(describeStep(steps[clamped]));
+  };
 
   if (nav.arrived) {
     return (
@@ -83,37 +95,59 @@ export default function NavigationPanel({ option, destination, position, locatio
       {nav.offRoute && !nav.rerouting && <p className="nav-status nav-status-warn">You seem to be off the route.</p>}
       {nav.alightAlert && <p className="nav-alight" role="alert">{nav.alightAlert}</p>}
 
+      {viewing && (
+        <div className="nav-viewing" role="status">
+          <span>
+            Viewing step {shownIndex + 1} ({shownIndex < nav.index ? "already done" : "coming up"}). You're on step {nav.index + 1}.
+          </span>
+          <button type="button" className="btn btn-primary" onClick={() => setViewIndex(null)}>
+            Back to current step
+          </button>
+        </div>
+      )}
+
       {step && (
-        <div className="nav-current">
+        <div className={`nav-current ${viewing ? "nav-current-viewing" : ""}`}>
           <span className="nav-maneuver" aria-hidden="true">
             {step.transit ? meta.icon : MANEUVER_ICON[step.maneuver] || "⬆️"}
           </span>
           <div>
             <p className="nav-instruction">{describeStep(step)}</p>
-            <p className="nav-distance">
-              {nav.distanceToStepEnd != null
-                ? step.transit
-                  ? `Get off at ${step.transit.arrivalStop} · arrives ${formatTime(step.transit.arrivalTime)}`
-                  : `${formatDistance(nav.distanceToStepEnd)} to go`
-                : formatDistance(step.distanceMeters)}
-            </p>
-            {step.transit && (
-              <p className="nav-transit-meta">
-                Departs {formatTime(step.transit.departureTime)}{step.transit.agency && ` · ${step.transit.agency}`}
+            {step.transit ? (
+              <>
+                <p className="nav-stop">
+                  <span className="nav-stop-label">Get on</span> <strong>{step.transit.departureStop || "first stop"}</strong>
+                  {step.transit.departureTime && ` · departs ${formatTime(step.transit.departureTime)}`}
+                </p>
+                <p className="nav-stop">
+                  <span className="nav-stop-label">Get off</span> <strong>{step.transit.arrivalStop || "your stop"}</strong>
+                  {step.transit.arrivalTime && ` · arrives ${formatTime(step.transit.arrivalTime)}`}
+                </p>
+                <p className="nav-transit-meta">
+                  {step.transit.stopCount ? `${step.transit.stopCount} stop${step.transit.stopCount === 1 ? "" : "s"}` : ""}
+                  {step.transit.agency && `${step.transit.stopCount ? " · " : ""}${step.transit.agency}`}
+                </p>
+                {transitLabel(step.transit.vehicleType) !== "Bus" && (
+                  <p className="nav-transit-meta">Platform: check the departure screens at the station.</p>
+                )}
+              </>
+            ) : (
+              <p className="nav-distance">
+                {!viewing && nav.distanceToStepEnd != null ? `${formatDistance(nav.distanceToStepEnd)} to go` : formatDistance(step.distanceMeters)}
               </p>
             )}
           </div>
         </div>
       )}
 
-      {nav.next && <p className="nav-next">Then: {describeStep(nav.next)}</p>}
+      {nextStep && <p className="nav-next">Then: {describeStep(nextStep)}</p>}
 
       <div className="nav-controls">
-        <button type="button" className="btn btn-ghost" onClick={() => nav.goTo(nav.index - 1)} disabled={nav.index === 0}>
+        <button type="button" className="btn btn-ghost" onClick={() => view(shownIndex - 1)} disabled={shownIndex === 0}>
           ◀ Previous
         </button>
-        <span className="nav-progress">Step {nav.index + 1} of {option.steps.length}</span>
-        <button type="button" className="btn btn-ghost" onClick={() => nav.goTo(nav.index + 1)} disabled={!nav.next}>
+        <span className="nav-progress">Step {shownIndex + 1} of {steps.length}</span>
+        <button type="button" className="btn btn-ghost" onClick={() => view(shownIndex + 1)} disabled={!nextStep}>
           Next ▶
         </button>
       </div>
@@ -123,9 +157,11 @@ export default function NavigationPanel({ option, destination, position, locatio
       </button>
       {showAll && (
         <ol className="nav-step-list">
-          {option.steps.map((s, i) => (
-            <li key={i} className={i === nav.index ? "current" : i < nav.index ? "done" : ""}>
-              {describeStep(s)} <span>{formatDistance(s.distanceMeters)}</span>
+          {steps.map((s, i) => (
+            <li key={i} className={`${i === nav.index ? "current" : i < nav.index ? "done" : ""} ${i === shownIndex && viewing ? "viewing" : ""}`}>
+              <button type="button" className="nav-step-btn" onClick={() => view(i)} aria-current={i === nav.index ? "step" : undefined}>
+                {describeStep(s)} <span>{formatDistance(s.distanceMeters)}</span>
+              </button>
             </li>
           ))}
         </ol>

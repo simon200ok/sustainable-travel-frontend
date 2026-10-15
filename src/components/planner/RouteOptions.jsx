@@ -33,12 +33,17 @@ function caption(result) {
 }
 
 // Where to get off the (last) bus, Metro or train, and the walk from there
+// Where to get on the first bus/Metro/train and off the last one, and the walk from there
 function alighting(option) {
   const rides = option.steps.filter((s) => s.transit);
+  const first = rides[0]?.transit;
   const last = rides[rides.length - 1]?.transit;
-  if (!last?.arrivalStop) return null;
+  if (!first?.departureStop && !last?.arrivalStop) return null;
   const walk = option.walkAfterSeconds ? ` · ${Math.max(1, Math.round(option.walkAfterSeconds / 60))} min walk after` : "";
-  return `🚏 Get off at ${last.arrivalStop}${walk}${option.transfers ? ` · ${option.transfers} change${option.transfers === 1 ? "" : "s"}` : ""}`;
+  const changes = option.transfers ? ` · ${option.transfers} change${option.transfers === 1 ? "" : "s"}` : "";
+  const on = first?.departureStop ? `Get on at ${first.departureStop}` : "";
+  const off = last?.arrivalStop ? `get off at ${last.arrivalStop}` : "";
+  return `🚏 ${[on, off].filter(Boolean).join(", ")}${walk}${changes}`.replace("🚏 get", "🚏 Get");
 }
 
 export default function RouteOptions({ result, selected, onSelect, onStart, starting = false }) {
