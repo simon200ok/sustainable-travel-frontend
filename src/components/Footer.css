@@ -111,6 +111,10 @@
   /* color: rgba(255,255,255,0.4); */
 }
 
+.footer-bottom .footer-independent {
+  margin-top: 4px;
+}
+
 @media (max-width: 768px) {
   .footer-grid {
     grid-template-columns: 1fr;

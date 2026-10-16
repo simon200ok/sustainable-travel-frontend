@@ -16,6 +16,12 @@ export default function Privacy() {
 
       <section className="section privacy-content">
         <div className="container privacy-body">
+          <p>
+            The Sustainable Travel Hub is run by the University of Sunderland Developer Society. It is an independent
+            project, not an official University of Sunderland service, and the University is not responsible for how this
+            app handles your data.
+          </p>
+
           <h2>Your location</h2>
           <p>
             If you allow it, your browser shares your location so the app can start journeys from where you are, show
@@ -49,10 +55,10 @@ export default function Privacy() {
             settings deletes them.
           </p>
 
-          <h2>Anonymous campus totals</h2>
+          <h2>Anonymous community totals</h2>
           <p>
-            When you finish a green journey, the app sends only the travel mode and distance, so we can show the Team UoS
-            total. It contains no name, account, device ID or location.
+            When you finish a green journey, the app sends only the travel mode and distance, so we can show the total
+            for everyone using the app. It contains no name, account, device ID or location.
           </p>
 
           <h2>Counting visitors</h2>
@@ -85,17 +91,17 @@ export default function Privacy() {
           <h2>Services we use</h2>
           <ul>
             <li>
-              <strong>Google Maps Platform</strong> — the home-page map, place search and journey planning. Use of these
+              <strong>Google Maps Platform</strong>: the home-page map, place search and journey planning. Use of these
               features is subject to the{' '}
               <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">Google Maps Terms of Service</a>{' '}
               and the{' '}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a>.
             </li>
             <li>
-              <strong>OpenStreetMap</strong> — map tiles on the Live Map page are loaded from OpenStreetMap's servers.
+              <strong>OpenStreetMap</strong>: map tiles on the Live Map page are loaded from OpenStreetMap's servers.
             </li>
             <li>
-              <strong>Bus Open Data Service</strong> (Department for Transport) — live bus positions and fares. Our server
+              <strong>Bus Open Data Service</strong> (Department for Transport): live bus positions and fares. Our server
               fetches these; your browser doesn't contact it.
             </li>
             <li>
@@ -103,16 +109,14 @@ export default function Privacy() {
               your browser doesn't contact it.
             </li>
             <li>
-              <strong>Vercel, Render and Neon</strong> — host the website, the server and its database.
+              <strong>Vercel, Render and Neon</strong>: host the website, the server and its database.
             </li>
           </ul>
 
           <h2>Questions</h2>
           <p>
-            {/* Contact the team that runs this app, or the University of Sunderland's Data Protection Officer, if you have
-            any questions about your data. */}
-            Contact the University of Sunderland Developer Society if you have any questions about your data, or to ask
-            us to delete a message you sent, use the <Link to="/contact?topic=privacy">contact form</Link>.
+            If you have any questions about your data, or want us to delete a message you sent, contact the University of
+            Sunderland Developer Society using the <Link to="/contact?topic=privacy">contact form</Link>.
           </p>
         </div>
       </section>

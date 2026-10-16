@@ -17,10 +17,11 @@ export default function Navbar() {
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div className="container navbar-inner">
-        <NavLink to="/" className="navbar-brand" onClick={() => setMenuOpen(false)}>
-          {/* The logo includes the name; the light or dark version shows to match the theme */}
-          <img src="/brand/logo-light.svg" alt="Sustainable Travel Hub" className="brand-logo brand-logo-light" width="138" height="40" />
-          <img src="/brand/logo-dark.svg" alt="" aria-hidden="true" className="brand-logo brand-logo-dark" width="138" height="40" />
+        <NavLink to="/" className="navbar-brand" aria-label="Sustainable Travel Hub home" onClick={() => setMenuOpen(false)}>
+          {/* The logo includes the name; the light or dark version shows to match the theme.
+              The link's name comes from aria-label, so it's read out whichever version is showing. */}
+          <img src="/brand/logo-light.svg" alt="" className="brand-logo brand-logo-light" width="138" height="40" />
+          <img src="/brand/logo-dark.svg" alt="" className="brand-logo brand-logo-dark" width="138" height="40" />
         </NavLink>
 
         <div className="navbar-end">

@@ -57,7 +57,7 @@ export default function ImpactCard() {
       </div>
       {community && community.term.journeys > 0 && (
         <div className="impact-community">
-          <span className="impact-community-label">Team UoS this term</span>
+          <span className="impact-community-label">Everyone this term</span>
           <span className="impact-community-value">{formatKg(community.term.co2SavedKg)} CO₂ saved</span>
           <span className="impact-community-sub">
             {community.term.journeys.toLocaleString("en-GB")} green trips · {community.week.journeys.toLocaleString("en-GB")} this week

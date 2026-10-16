@@ -3,7 +3,7 @@ import './Privacy.css';
 
 // Update these when the statement is reviewed or the app is re-tested
 const PREPARED = '8 October 2026';
-const LAST_REVIEWED = '8 October 2026';
+const LAST_REVIEWED = '16 October 2026';
 const LAST_TESTED = '8 October 2026';
 
 export default function Accessibility() {
@@ -19,9 +19,10 @@ export default function Accessibility() {
       <section className="section privacy-content">
         <div className="container privacy-body">
           <p>
-            This accessibility statement applies to the University of Sunderland Sustainable Travel Hub at
-            uos-sustainable-travel.vercel.app, including the version you can install on your phone. It is run by the
-            University of Sunderland Developer Society for students and staff of the University of Sunderland.
+            This accessibility statement applies to the Sustainable Travel Hub at uos-sustainable-travel.vercel.app,
+            including the version you can install on your phone. The Sustainable Travel Hub is an independent project run by
+            the University of Sunderland Developer Society. It is not an official University of Sunderland service, and it
+            is not endorsed by the University or by any transport operator.
           </p>
           <p>We want as many people as possible to be able to use this website. For example, that means you should be able to:</p>
           <ul>
@@ -47,7 +48,7 @@ export default function Accessibility() {
               available as text: route options and every turn-by-turn step, campus details, cycle parking descriptions and
               the number of live buses.
             </li>
-            <li>The positions of the live 700/701 buses are shown on the map only.</li>
+            <li>The positions of live buses, trains and Metros are shown on the map only.</li>
             <li>The arrow showing which way you're facing is visual only. Spoken and written directions give the same guidance.</li>
             <li>Spoken directions depend on your device supporting text-to-speech. Written directions always work.</li>
             <li>
@@ -63,34 +64,27 @@ export default function Accessibility() {
             please tell us using the <Link to="/contact?topic=accessibility">contact form</Link> and choose “Accessibility”.
             We'll consider your request and aim to get back to you within 5 working days.
           </p>
-
-          <h2>Enforcement procedure</h2>
           <p>
-            The Equality and Human Rights Commission (EHRC) is responsible for enforcing the Public Sector Bodies (Websites
-            and Mobile Applications) (No. 2) Accessibility Regulations 2018 (the “accessibility regulations”). If you're not
-            happy with how we respond to your complaint, contact the{' '}
+            If you're not happy with how we respond, the{' '}
             <a href="https://www.equalityadvisoryservice.com/" target="_blank" rel="noopener noreferrer">
               Equality Advisory and Support Service (EASS)
-            </a>.
+            </a>{' '}
+            can give you free advice.
           </p>
 
           <h2>Technical information about this website's accessibility</h2>
           <p>
-            The University of Sunderland Developer Society is committed to making its website accessible, in accordance with
-            the Public Sector Bodies (Websites and Mobile Applications) (No. 2) Accessibility Regulations 2018.
-          </p>
-
-          <h3>Compliance status</h3>
-          <p>
-            This website is partially compliant with the{' '}
+            We are committed to making this website accessible. We use the{' '}
             <a href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noopener noreferrer">
               Web Content Accessibility Guidelines version 2.2
             </a>{' '}
-            AA standard, due to the non-compliances listed below.
+            AA standard as our target.
           </p>
 
-          <h2>Non-accessible content</h2>
-          <h3>Non-compliance with the accessibility regulations</h3>
+          <h3>How well this website meets the standard</h3>
+          <p>This website partially meets WCAG 2.2 AA, because of the problems listed below.</p>
+
+          <h2>Content that doesn't meet the standard</h2>
           <ul>
             <li>
               Some map pins overlap where cycle stands are close together, so they're smaller than the minimum tap size.
@@ -101,19 +95,18 @@ export default function Accessibility() {
               2.1.1 (Keyboard) and 4.1.2 (Name, Role, Value) for some map controls.
             </li>
           </ul>
-          <p>We plan to fix what we can before the University takes over the service, and to review this statement at least once a year.</p>
+          <p>We plan to fix what we can, and to review this statement at least once a year.</p>
 
-          <h3>Content that's not within the scope of the accessibility regulations</h3>
+          <h3>Maps</h3>
           <p>
-            Online maps and mapping services are exempt from the regulations, as long as essential information is provided in
-            an accessible way for maps used for navigation. Journey options, turn-by-turn steps, stop names and campus
-            information are all provided as text.
+            Maps can be hard to make fully accessible, so we provide the essential information from them as text as well.
+            Journey options, turn-by-turn steps, stop names and campus information are all available as text.
           </p>
 
           <h2>What we're doing to improve accessibility</h2>
           <ul>
             <li>Testing with screen readers (NVDA on Windows, VoiceOver on iPhone and Mac) and fixing what we find.</li>
-            <li>Arranging an independent accessibility audit before handover to the University.</li>
+            <li>Arranging an independent accessibility audit.</li>
             <li>Checking every new feature against WCAG 2.2 AA before it's released.</li>
           </ul>
 

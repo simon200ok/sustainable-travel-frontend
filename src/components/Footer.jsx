@@ -37,14 +37,15 @@ export default function Footer() {
           </div>
 
           <div className="footer-col">
-            <h4>University Links</h4>
-            <a href="https://www.sunderland.ac.uk" target="_blank" rel="noopener noreferrer">UoS Website</a>
-            <a href="https://www.sunderland.ac.uk/about/sustainability/" target="_blank" rel="noopener noreferrer">Sustainability Team</a>
+            <h4>Useful Links</h4>
+            <a href="https://www.sunderland.ac.uk" target="_blank" rel="noopener noreferrer">University of Sunderland website</a>
+            <a href="https://www.sunderland.ac.uk/about/sustainability/" target="_blank" rel="noopener noreferrer">University sustainability team</a>
           </div>
         </div>
 
         <div className="footer-bottom">
           <p>&copy; {new Date().getFullYear()} University of Sunderland Developer Society. All rights reserved.</p>
+          <p className="footer-independent">An independent project. Not an official University of Sunderland service.</p>
         </div>
       </div>
     </footer>
