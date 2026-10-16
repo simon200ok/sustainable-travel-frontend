@@ -44,6 +44,18 @@ export const MODE_META = {
   car_share: { icon: "🚗", color: "#6D4C41" },
 };
 
+// The picture for one ride, from the vehicle Google names for that step (a bus ride and a
+// train ride in the same journey each get their own picture)
+export function vehicleIcon(type) {
+  if (["BUS", "INTERCITY_BUS", "TROLLEYBUS", "SHARE_TAXI"].includes(type)) return "🚌";
+  if (["TRAM", "LIGHT_RAIL"].includes(type)) return "🚊";
+  if (["SUBWAY", "METRO_RAIL", "MONORAIL"].includes(type)) return "🚇";
+  if (type === "FERRY") return "⛴️";
+  if (["CABLE_CAR", "GONDOLA_LIFT", "FUNICULAR"].includes(type)) return "🚡";
+  if (["RAIL", "HEAVY_RAIL", "COMMUTER_TRAIN", "HIGH_SPEED_TRAIN", "LONG_DISTANCE_TRAIN"].includes(type)) return "🚆";
+  return "🚍";
+}
+
 export function transitLabel(type) {
   if (!type) return "Transit";
   if (["BUS", "INTERCITY_BUS", "TROLLEYBUS"].includes(type)) return "Bus";

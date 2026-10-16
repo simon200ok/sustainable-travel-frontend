@@ -131,3 +131,16 @@ export const getVehiclesInArea = (bounds, { signal } = {}) =>
     `/live/vehicles?bbox=${[bounds.west, bounds.south, bounds.east, bounds.north].map((v) => v.toFixed(4)).join(",")}`,
     { cacheMs: 10_000, timeoutMs: 15_000, signal },
   );
+
+// Trains (and Metro on the Sunderland line) inside the map area. Positions are estimated from
+// live departure boards, not GPS. bounds = { west, south, east, north }
+export const getTrainsInArea = (bounds, { signal } = {}) =>
+  request(
+    `/rail/trains?${new URLSearchParams({
+      south: bounds.south.toFixed(4),
+      west: bounds.west.toFixed(4),
+      north: bounds.north.toFixed(4),
+      east: bounds.east.toFixed(4),
+    })}`,
+    { cacheMs: 15_000, timeoutMs: 15_000, signal },
+  );

@@ -70,7 +70,7 @@ export default function AdminApp() {
   return (
     <div className="page admin">
       {/* React 19 hoists these into <head>: keep the admin area out of search engines */}
-      <title>Admin · UoS Sustainable Travel Hub</title>
+      <title>Admin · Sustainable Travel Hub</title>
       <meta name="robots" content="noindex, nofollow" />
 
       {acceptingInvite ? (

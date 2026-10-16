@@ -7,7 +7,7 @@ export default function Privacy() {
     <div className="page privacy">
       <section className="page-header">
         <div className="container">
-          <h1 className="page-title">Privacy Policy</h1>
+          <h1 className="page-title">Privacy Notice</h1>
           <p className="page-desc">
             What the Sustainable Travel Hub does with your data in plain English. No account, no adverts, no tracking cookies.
           </p>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatDistance, formatKg, formatTime, MODE_META } from "../../lib/format";
+import { formatDistance, formatKg, formatTime, MODE_META, vehicleIcon } from "../../lib/format";
 import { describeStep } from "../../lib/navigation";
 import { speak, speechSupported } from "../../lib/speech";
 import LocationNotice from "../LocationNotice";
@@ -110,7 +110,7 @@ export default function NavigationPanel({ option, destination, position, locatio
       {step && (
         <div className={`nav-current ${viewing ? "nav-current-viewing" : ""}`}>
           <span className="nav-maneuver" aria-hidden="true">
-            {step.transit ? meta.icon : MANEUVER_ICON[step.maneuver] || "⬆️"}
+            {step.transit ? vehicleIcon(step.transit.vehicleType) : MANEUVER_ICON[step.maneuver] || "⬆️"}
           </span>
           <div>
             <p className="nav-instruction">{describeStep(step)}</p>

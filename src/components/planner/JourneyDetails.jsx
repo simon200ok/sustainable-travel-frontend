@@ -1,8 +1,7 @@
-import { MODE_META, formatDistance, formatDuration, formatKg, formatPrice, formatTime, formatWhen, transitLabel } from "../../lib/format";
+import { MODE_META, formatDistance, formatDuration, formatKg, formatPrice, formatTime, formatWhen, transitLabel, vehicleIcon } from "../../lib/format";
 import { describeStep } from "../../lib/navigation";
 import PlatformInfo from "./PlatformInfo";
 
-const TRANSIT_ICON = { Bus: "🚌", Metro: "🚇", Train: "🚆", Transit: "🚍" };
 const MOVE = {
   WALK: { icon: "🚶", verb: "Walk" },
   BICYCLE: { icon: "🚲", verb: "Cycle" },
@@ -57,7 +56,7 @@ export default function JourneyDetails({ option }) {
             const badge = t.color ? { background: t.color, color: t.textColor || "#fff" } : { background: MODE_META[option.mode]?.color || "#333", color: "#fff" };
             return (
               <li key={i} className="tl-ride" style={{ "--tl-color": t.color || MODE_META[option.mode]?.color || "var(--uos-orange)" }}>
-                <span className="tl-icon" aria-hidden="true">{TRANSIT_ICON[kind]}</span>
+                <span className="tl-icon" aria-hidden="true">{vehicleIcon(t.vehicleType)}</span>
                 <div className="tl-body">
                   <p className="tl-title">
                     {t.line && <span className="tl-line" style={badge}>{t.line}</span>} {kind}

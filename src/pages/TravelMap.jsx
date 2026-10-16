@@ -6,7 +6,9 @@ import 'leaflet/dist/leaflet.css';
 import { getLiveBuses, getLocations } from '../lib/api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { LIVE_MIN_ZOOM, areaStatusText, useAreaVehicles } from '../hooks/useAreaVehicles';
-import { getCurrentPosition } from '../lib/geo';
+import { trainsStatusText, useAreaTrains } from '../hooks/useAreaTrains';
+import { getCurrentPosition, locationAlreadyAllowed, watchLocationPermission } from '../lib/geo';
+import { useLiveLocation } from '../hooks/useLiveLocation';
 import LocationNotice from '../components/LocationNotice';
 import { readJSON, writeJSON } from '../lib/storage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -69,6 +71,21 @@ function createBusIcon(bus, other = false) {
     iconSize: [44, 44],
     iconAnchor: [22, 22],
     popupAnchor: [0, -22],
+  });
+}
+
+// Trains and Metros: dashed outline because the position is estimated, not GPS
+function createTrainIcon(train) {
+  const rotation = Number.isFinite(train.bearing) ? train.bearing : null;
+  const metro = train.kind === 'metro';
+  return L.divIcon({
+    className: 'custom-marker live-bus-marker',
+    html: `<div class="live-train ${metro ? 'live-train-metro' : ''}">${
+      rotation !== null && train.moving ? `<span class="live-train-arrow" style="transform:rotate(${rotation}deg)"></span>` : ''
+    }<span class="live-train-icon">${metro ? '🚇' : '🚆'}</span></div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20],
   });
 }
 
@@ -163,11 +180,39 @@ export default function TravelMap() {
   const [allBuses, setAllBuses] = useState(() => readJSON('uos-map-all-buses', false));
   const [view, setView] = useState(null);
   const area = useAreaVehicles(view, allBuses);
-  const [me, setMe] = useState(null);
+  // Off each time the page opens; switched on with the button
+  const [showTrains, setShowTrains] = useState(false);
+  const trainArea = useAreaTrains(view, showTrains);
+  const trainMarkers = useMemo(() => trainArea.trains.map((t) => ({ ...t, icon: createTrainIcon(t) })), [trainArea.trains]);
+  const [meFix, setMeFix] = useState(null);
+  // Follow the user's position once location is allowed (here or anywhere else in the app)
+  const [tracking, setTracking] = useState(false);
+  const live = useLiveLocation(tracking);
+  const me = live.position ? [live.position.lat, live.position.lng] : meFix;
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState('');
   const onView = useCallback((v) => setView(v), []);
   const meIcon = useMemo(createMeIcon, []);
+
+  // Already allowed (on the journey planner, a trip, or an earlier visit)? Show "you are here"
+  // straight away without asking. Also notice if location is switched on while this page is open.
+  useEffect(() => {
+    let cancelled = false;
+    let stop = null;
+    locationAlreadyAllowed().then((ok) => {
+      if (!cancelled && ok) setTracking(true);
+    });
+    watchLocationPermission((state) => {
+      if (state === 'granted') setTracking(true);
+    }).then((unsubscribe) => {
+      if (cancelled) unsubscribe?.();
+      else stop = unsubscribe;
+    });
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, []);
 
   useEffect(() => {
     writeJSON('uos-map-all-buses', allBuses);
@@ -180,12 +225,19 @@ export default function TravelMap() {
     [area.vehicles, showLive, universityRefs],
   );
 
+  // "My location": uses the position the app already has; otherwise asks for it (the browser
+  // shows its "Allow location?" question if it hasn't been allowed yet)
   async function showMyLocation() {
-    setLocating(true);
     setLocateError('');
+    if (live.position) {
+      setFlyTarget({ center: [live.position.lat, live.position.lng], zoom: Math.max(DEFAULT_ZOOM, view?.zoom ?? 0) });
+      return;
+    }
+    setLocating(true);
     try {
       const pos = await getCurrentPosition();
-      setMe([pos.lat, pos.lng]);
+      setMeFix([pos.lat, pos.lng]);
+      setTracking(true);
       setFlyTarget({ center: [pos.lat, pos.lng], zoom: Math.max(DEFAULT_ZOOM, view?.zoom ?? 0) });
     } catch (code) {
       // The real reason (blocked / unavailable / too slow), with the right steps for this browser
@@ -285,6 +337,24 @@ export default function TravelMap() {
               </span>
             )}
           </div>
+          <div className="all-buses-row">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showTrains}
+              className={`all-buses-toggle ${showTrains ? 'active' : ''}`}
+              onClick={() => setShowTrains((v) => !v)}
+            >
+              <span className="all-buses-knob" aria-hidden="true" />
+              🚆 Trains &amp; Metro
+            </button>
+            {showTrains && (
+              <span className={`live-status-inline ${trainArea.status === 'error' ? 'live-status-error' : ''}`} role="status" aria-live="polite">
+                {trainsStatusText(trainArea) || 'Move the map to load trains.'}
+                {trainArea.status === 'ok' && <> · Powered by National Rail Enquiries</>}
+              </span>
+            )}
+          </div>
           {locateError && (
             <LocationNotice code={locateError} onRetry={showMyLocation} onDismiss={() => setLocateError('')} dismissLabel="Close" />
           )}
@@ -333,6 +403,31 @@ export default function TravelMap() {
                           {bus.origin && bus.destination ? `${bus.origin} → ${bus.destination}` : bus.destination ? `To ${bus.destination}` : 'Live bus'}
                           <br />
                           Operator: {bus.operatorRef || 'unknown'} · updated {secondsAgo(bus.recordedAt)}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              {showTrains &&
+                trainMarkers.map((train) => (
+                  <Marker key={train.id} position={[train.lat, train.lng]} icon={train.icon} zIndexOffset={600}>
+                    <Popup>
+                      <div className="map-popup">
+                        <h3>{train.kind === 'metro' ? 'Metro' : 'Train'} to {train.destination || 'unknown'}</h3>
+                        <p>
+                          {train.operator}
+                          <br />
+                          {train.moving ? (
+                            <>
+                              Next stop: {train.nextStop}
+                              {train.nextTime && ` (expected ${train.nextTime})`}
+                              {train.delayMinutes > 0 && <> · {train.delayMinutes} min late</>}
+                            </>
+                          ) : (
+                            <>Delayed at {train.lastStop}. No new time yet.</>
+                          )}
+                          <br />
+                          <em>Position estimated from live times, not GPS.</em>
                         </p>
                       </div>
                     </Popup>

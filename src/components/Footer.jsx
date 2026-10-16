@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
 import './Footer.css';
-import UosLogo from '/images/apple-touch-icon.png';
 
 export default function Footer() {
   return (
@@ -9,17 +8,8 @@ export default function Footer() {
         <div className="footer-grid">
           <div className="footer-col">
             <div className="footer-brand">
-              <div className="footer-logo">
-                <img 
-                  src={UosLogo} 
-                  alt="Logo" 
-                  className="logo-icon-1"
-                />
-              </div>
-              <div>
-                <h3>Sustainable Travel Hub</h3>
-                <p>University of Sunderland</p>
-              </div>
+              {/* The footer is dark in both themes, so it uses the logo for dark backgrounds */}
+              <img src="/brand/logo-dark.svg" alt="Sustainable Travel Hub" className="footer-brand-logo" width="152" height="44" />
             </div>
             <p className="footer-desc">
               Helping students make informed, sustainable travel choices across the North East.
@@ -33,7 +23,7 @@ export default function Footer() {
             <NavLink to="/map">Live Map</NavLink>
             <NavLink to="/sustainability">Sustainability Tips</NavLink>
             <NavLink to="/contact">Contact Us</NavLink>
-            <NavLink to="/privacy">Privacy Policy</NavLink>
+            <NavLink to="/privacy">Privacy Notice</NavLink>
             <NavLink to="/accessibility">Accessibility</NavLink>
             <NavLink to="/admin">Admin Sign-in</NavLink>
           </div>

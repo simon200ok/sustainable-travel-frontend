@@ -94,7 +94,7 @@ export function downloadCalendarReminder({ id, title, body, leaveAt, minutesBefo
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//UoS Sustainable Travel Hub//EN",
+    "PRODID:-//Sustainable Travel Hub//EN",
     "BEGIN:VEVENT",
     `UID:${icsEscape(id)}@uos-sustainable-travel`,
     `DTSTAMP:${icsDate(new Date())}`,

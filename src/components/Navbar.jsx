@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import './Navbar.css';
-import UosLogo from '/images/apple-touch-icon.png';
 
 const navLinks = [
   { path: '/', label: 'Home' },
@@ -19,13 +18,9 @@ export default function Navbar() {
     <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div className="container navbar-inner">
         <NavLink to="/" className="navbar-brand" onClick={() => setMenuOpen(false)}>
-          <div className="navbar-logo">
-            <img src={UosLogo} alt="University of Sunderland logo" className="logo-icon-1" />
-          </div>
-          <div className="navbar-brand-text">
-            <span className="brand-title">Sustainable Travel Hub</span>
-            <span className="brand-sub">University of Sunderland</span>
-          </div>
+          {/* The logo includes the name; the light or dark version shows to match the theme */}
+          <img src="/brand/logo-light.svg" alt="Sustainable Travel Hub" className="brand-logo brand-logo-light" width="138" height="40" />
+          <img src="/brand/logo-dark.svg" alt="" aria-hidden="true" className="brand-logo brand-logo-dark" width="138" height="40" />
         </NavLink>
 
         <div className="navbar-end">

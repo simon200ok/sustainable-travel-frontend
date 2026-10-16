@@ -7,7 +7,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useTurnByTurn } from "../../hooks/useTurnByTurn";
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { getLocations } from "../../lib/api";
-import { formatDistance, MODE_META } from "../../lib/format";
+import { formatDistance, MODE_META, vehicleIcon } from "../../lib/format";
 import { describeStep } from "../../lib/navigation";
 import { speak, speechSupported, stopSpeaking } from "../../lib/speech";
 import NavigationPanel, { MANEUVER_ICON } from "./NavigationPanel";
@@ -149,7 +149,7 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
       <div className="nav-bar" role="region" aria-label="Journey in progress">
         <button type="button" className="nav-bar-main" onClick={open}>
           <span className="nav-bar-icon" style={{ background: meta.color }} aria-hidden="true">
-            {step?.transit ? meta.icon : MANEUVER_ICON[step?.maneuver] || meta.icon}
+            {step?.transit ? vehicleIcon(step.transit.vehicleType) : MANEUVER_ICON[step?.maneuver] || meta.icon}
           </span>
           <span className="nav-bar-text">
             <strong>{step ? describeStep(step) : `${option.label} to ${destination.label}`}</strong>

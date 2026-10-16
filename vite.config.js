@@ -24,12 +24,13 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         // Updates are applied by src/lib/appUpdate.js: never a surprise reload, never during a trip
         registerType: 'prompt',
-        includeAssets: ['favicon.ico', 'images/apple-touch-icon.png', 'theme-init.js'],
+        includeAssets: ['favicon.ico', 'favicon.svg', 'images/apple-touch-icon.png', 'theme-init.js', 'brand/*.svg'],
         manifest: {
           id: '/',
-          name: 'UoS Sustainable Travel Hub',
-          short_name: 'UoS Travel',
-          description: 'Green journeys, live buses and fares for University of Sunderland students and staff.',
+          name: 'Sustainable Travel Hub',
+          // Shown under the home-screen icon, where phones cut names after about 12 characters
+          short_name: 'Travel Hub',
+          description: 'Greener journeys, made simple: live buses, trains, fares and the CO₂ you save.',
           lang: 'en-GB',
           start_url: '/',
           scope: '/',

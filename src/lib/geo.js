@@ -123,13 +123,92 @@ export async function locationPermissionState() {
 
 // The latest position the app has (from any request or from live tracking), shared by every page
 let lastFix = null;
+const ALLOWED_KEY = "uos-location-ok";
 
 export function rememberPosition(p) {
   if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) lastFix = { lat: p.lat, lng: p.lng, accuracy: p.accuracy, at: Date.now() };
+  noteAllowed(true);
 }
 
 export function recentPosition(maxAgeMs = 60_000) {
   return lastFix && Date.now() - lastFix.at <= maxAgeMs ? lastFix : null;
+}
+
+// Location was given somewhere in the app during this visit. Some browsers (Safari) report "prompt"
+// even after the person has said yes, so this lets every page know without asking again.
+function noteAllowed(ok) {
+  try {
+    if (ok) sessionStorage.setItem(ALLOWED_KEY, "1");
+    else sessionStorage.removeItem(ALLOWED_KEY);
+  } catch {
+    // private browsing: the browser's own permission state is still used
+  }
+}
+
+/** True when location can be used without the browser asking (allowed already, here or on another page). */
+export async function locationAlreadyAllowed() {
+  if (!window.isSecureContext || !("geolocation" in navigator)) return false;
+  const state = await locationPermissionState();
+  if (state === "granted") return true;
+  if (state === "denied") return false;
+  if (recentPosition()) return true;
+  try {
+    return sessionStorage.getItem(ALLOWED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+// One live location watch shared by every part of the app (journey planner, trip, Live Map).
+// Pages subscribe and unsubscribe; the GPS stays on only while at least one page is listening.
+const listeners = new Set();
+let watchId = null;
+let latest = null; // the newest full reading (with heading and speed)
+
+function startSharedWatch() {
+  if (watchId !== null || listeners.size === 0) return;
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      latest = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        heading: pos.coords.heading,
+        speed: pos.coords.speed,
+        at: pos.timestamp,
+      };
+      rememberPosition(latest);
+      for (const l of listeners) l.onPosition(latest);
+    },
+    (err) => {
+      const code = geolocationErrorCode(err);
+      if (code === "denied") {
+        // Stop, so the watch can start afresh once the person allows location again
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        latest = null;
+        noteAllowed(false);
+      }
+      for (const l of listeners) l.onError(code);
+    },
+    { enableHighAccuracy: true, maximumAge: 2_000, timeout: 20_000 },
+  );
+}
+
+/** Follows the user's position. Returns a function that stops following. */
+export function subscribePosition(onPosition, onError) {
+  const listener = { onPosition, onError };
+  listeners.add(listener);
+  // A page that joins late gets the newest reading straight away
+  if (latest && Date.now() - latest.at <= 60_000) onPosition(latest);
+  startSharedWatch();
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0 && watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+  };
 }
 
 // Keeps listening until the first fix arrives (Chrome on Windows often answers this way when a
@@ -184,9 +263,13 @@ export async function getCurrentPosition() {
   try {
     pos = await requestPosition({ enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 });
   } catch (code) {
-    if (code === "denied") throw code;
+    if (code === "denied") {
+      noteAllowed(false);
+      throw code;
+    }
     pos = await firstFixFromWatch(30_000);
   }
   rememberPosition(pos);
+  startSharedWatch(); // restarts live tracking for any page that was waiting (e.g. after "Allow")
   return pos;
 }

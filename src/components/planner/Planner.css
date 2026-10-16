@@ -853,6 +853,29 @@
   border-color: var(--uos-orange);
 }
 
+/* "Re-centre" looks like the one on the trip map */
+.map-location-controls .planner-recenter {
+  background: var(--uos-orange);
+  color: #fff;
+  border-color: var(--uos-orange);
+  border-radius: 50px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-md);
+}
+
+.map-location-controls .planner-recenter:hover:not(:disabled) {
+  background: var(--uos-orange-dark);
+}
+
+.map-location-controls .planner-recenter:disabled {
+  opacity: 0.8;
+  cursor: progress;
+}
+
 /* ── Campus / anywhere-in-the-UK switch ──────────────────────────────── */
 
 .planner-scope {

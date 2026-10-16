@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { geolocationErrorCode, rememberPosition } from "../lib/geo";
+import { subscribePosition } from "../lib/geo";
 
 function unsupportedReason() {
   if (!window.isSecureContext) return "insecure";
@@ -7,7 +7,8 @@ function unsupportedReason() {
   return null;
 }
 
-// Continuous GPS tracking while navigating
+// Continuous GPS tracking. Every page shares one browser location watch, so allowing location
+// once (on any page) works everywhere, and a page that opens later gets the position at once.
 export function useLiveLocation(active) {
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
@@ -15,25 +16,13 @@ export function useLiveLocation(active) {
 
   useEffect(() => {
     if (!active || unsupportedReason()) return undefined;
-
-    const id = navigator.geolocation.watchPosition(
-      (pos) => {
+    return subscribePosition(
+      (next) => {
         setError(null);
-        const next = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          heading: pos.coords.heading,
-          speed: pos.coords.speed,
-          at: pos.timestamp,
-        };
-        rememberPosition(next); // other pages ("My location" on the Live Map) can use it instantly
         setPosition(next);
       },
-      (err) => setError(geolocationErrorCode(err)),
-      { enableHighAccuracy: true, maximumAge: 2_000, timeout: 20_000 },
+      (code) => setError(code),
     );
-    return () => navigator.geolocation.clearWatch(id);
   }, [active]);
 
   return { position, error: blocked || error };

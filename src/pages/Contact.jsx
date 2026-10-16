@@ -152,7 +152,7 @@ export default function Contact() {
                   />
                   <label htmlFor="contact-consent">
                     I agree that my name, email and message are stored so the team can reply. They're deleted after
-                    12 months (see the <Link to="/privacy">Privacy Policy</Link>).
+                    12 months (see the <Link to="/privacy">Privacy Notice</Link>).
                   </label>
                 </div>
                 {errors.consent && <p className="contact-error" id="contact-consent-error">{errors.consent}</p>}

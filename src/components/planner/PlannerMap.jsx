@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { APIProvider, AdvancedMarker, AdvancedMarkerAnchorPoint, Map, Polyline, useMap } from "@vis.gl/react-google-maps";
 import { areaStatusText, projectVehicle, useAreaVehicles } from "../../hooks/useAreaVehicles";
 import { distanceMeters } from "../../lib/geo";
@@ -19,7 +19,10 @@ const cameras = new globalThis.Map(); // (Map here is the Google map component)
 const fittedRoute = new globalThis.Map();
 const centred = new Set();
 const followZoomed = new Set();
-const LAYERS_KEY = "uos-map-layers";
+// Layer choices are remembered separately for the planner map (live buses on at first)
+// and the trip map (live buses off at first, so the route stays clear)
+const PLANNER_LAYERS_KEY = "uos-planner-layers";
+const TRIP_LAYERS_KEY = "uos-trip-layers";
 
 const WALK_DOTS = [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3 }, offset: "0", repeat: "12px" }];
 
@@ -61,8 +64,19 @@ function FollowUser({ position, following, onUserPan, zoom, mapKey }) {
   return null;
 }
 
-// Shows the user's own area when the page opens, and again whenever "My location" is pressed
-// "request" = { n, lat, lng }: a fresh position fetched when "My location" was pressed
+// Tells the planner when the person drags the map, so "Re-centre" can appear
+function WatchPan({ onPan }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map) return undefined;
+    const listener = map.addListener("dragstart", () => onPan());
+    return () => listener.remove();
+  }, [map, onPan]);
+  return null;
+}
+
+// Shows the user's own area when the page opens, and again whenever "Re-centre" is pressed
+// "request" = { n, lat, lng }: a fresh position fetched when "Re-centre" was pressed
 function CenterOnUser({ position, enabled, request, mapKey }) {
   const map = useMap();
   const lastRequest = useRef(request?.n ?? 0);
@@ -223,13 +237,16 @@ function PlannerMapInner({
   const containerRef = useRef(null);
   const inView = useInView(containerRef);
   const [loadError, setLoadError] = useState("");
-  const [layers, setLayers] = useState(() => ({ transit: false, bicycling: false, traffic: false, buses: false, ...readJSON(LAYERS_KEY, {}) }));
+  const layersKey = navigating ? TRIP_LAYERS_KEY : PLANNER_LAYERS_KEY;
+  const [layers, setLayers] = useState(() => ({ transit: false, bicycling: false, traffic: false, buses: !navigating, ...readJSON(layersKey, {}) }));
   const [recentre, setRecentre] = useState(null); // { n, lat, lng }
+  const [moved, setMoved] = useState(false); // the person has dragged the map away
+  const markMoved = useCallback(() => setMoved(true), []);
   const [findingMe, setFindingMe] = useState(false);
   const [meProblem, setMeProblem] = useState("");
   const [myFix, setMyFix] = useState(null);
 
-  // "My location": get the position now (or use one from the last minute), then centre on it
+  // "Re-centre": get the position now (or use one from the last minute), then centre on it
   async function centreOnMe() {
     setFindingMe(true);
     setMeProblem("");
@@ -237,6 +254,7 @@ function PlannerMapInner({
       const p = await getCurrentPosition();
       setMyFix(p);
       setRecentre((r) => ({ n: (r?.n ?? 0) + 1, lat: p.lat, lng: p.lng }));
+      setMoved(false);
     } catch (code) {
       setMeProblem(locationErrorInfo(code).title);
     } finally {
@@ -252,8 +270,8 @@ function PlannerMapInner({
   const camera = cameras.get(mapKey);
 
   useEffect(() => {
-    writeJSON(LAYERS_KEY, layers);
-  }, [layers]);
+    writeJSON(layersKey, layers);
+  }, [layersKey, layers]);
 
   useEffect(() => {
     // Google calls this global when the browser key is rejected (wrong referrer, billing off, ...)
@@ -313,6 +331,7 @@ function PlannerMapInner({
             <MapLayers layers={layers} />
             <FitToRoute points={routePoints} enabled={!navigating} mapKey={mapKey} />
             <CenterOnUser position={userPosition} enabled={!navigating && !option} request={recentre} mapKey={mapKey} />
+            {!navigating && <WatchPan onPan={markMoved} />}
             {navigating && <FollowUser position={userPosition} following={following} onUserPan={onUserPan} zoom={17} mapKey={mapKey} />}
             {layers.buses && <LiveVehicles onStatus={setBusStatus} userPosition={userPosition} ridingLine={ridingLine} />}
 
@@ -359,9 +378,10 @@ function PlannerMapInner({
               🧭 Show my direction
             </button>
           )}
-          {!navigating && (
-            <button type="button" onClick={centreOnMe} disabled={findingMe} aria-label="Centre the map on my location">
-              {findingMe ? <span className="spinner" /> : "◎"} {findingMe ? "Finding you…" : "My location"}
+          {/* Appears once the map has been dragged away, and goes again after re-centring (as on the trip map) */}
+          {!navigating && (moved || findingMe) && (
+            <button type="button" className="planner-recenter" onClick={centreOnMe} disabled={findingMe} aria-label="Re-centre the map on my location">
+              {findingMe ? <span className="spinner" /> : "◎"} {findingMe ? "Finding you…" : "Re-centre"}
             </button>
           )}
           {meProblem && !navigating && (
