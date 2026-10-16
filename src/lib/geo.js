@@ -121,6 +121,42 @@ export async function locationPermissionState() {
   }
 }
 
+// The latest position the app has (from any request or from live tracking), shared by every page
+let lastFix = null;
+
+export function rememberPosition(p) {
+  if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) lastFix = { lat: p.lat, lng: p.lng, accuracy: p.accuracy, at: Date.now() };
+}
+
+export function recentPosition(maxAgeMs = 60_000) {
+  return lastFix && Date.now() - lastFix.at <= maxAgeMs ? lastFix : null;
+}
+
+// Keeps listening until the first fix arrives (Chrome on Windows often answers this way when a
+// one-off request times out). Stops straight away if location is blocked.
+function firstFixFromWatch(timeoutMs) {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    let id = null;
+    const finish = (fn, value) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (id !== null) navigator.geolocation.clearWatch(id);
+      fn(value);
+    };
+    const timer = setTimeout(() => finish(reject, "timeout"), timeoutMs);
+    id = navigator.geolocation.watchPosition(
+      (pos) => finish(resolve, { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      (err) => {
+        if (geolocationErrorCode(err) === "denied") finish(reject, "denied");
+        // other errors: keep waiting until the time limit
+      },
+      { enableHighAccuracy: true, maximumAge: 0 },
+    );
+  });
+}
+
 function requestPosition(options) {
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
@@ -135,16 +171,22 @@ function requestPosition(options) {
  * Where the user is, as quickly as the browser can say.
  * 1. A quick, approximate fix (Wi-Fi/mobile network, or one from the last 5 minutes). Some
  *    browsers (Chrome especially) are slow to give a "precise" fix and would otherwise time out.
- * 2. If that fails (other than being blocked), one more go asking for a precise fix, with longer.
+ * 2. If that fails (other than being blocked), keep listening for a precise fix for up to 30 s.
+ * A position the app already has from the last minute is used straight away.
  * The live tracking that follows (useLiveLocation) then sharpens the position.
  */
 export async function getCurrentPosition() {
   if (!window.isSecureContext) throw "insecure";
   if (!("geolocation" in navigator)) throw "unsupported";
+  const recent = recentPosition();
+  if (recent) return recent;
+  let pos;
   try {
-    return await requestPosition({ enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 });
+    pos = await requestPosition({ enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 });
   } catch (code) {
     if (code === "denied") throw code;
-    return requestPosition({ enableHighAccuracy: true, maximumAge: 0, timeout: 20_000 });
+    pos = await firstFixFromWatch(30_000);
   }
+  rememberPosition(pos);
+  return pos;
 }

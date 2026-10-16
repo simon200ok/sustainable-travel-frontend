@@ -1,6 +1,6 @@
 import { locationErrorInfo } from "../lib/geo";
 
-export default function LocationNotice({ code, onRetry, onDismiss }) {
+export default function LocationNotice({ code, onRetry, onDismiss, dismissLabel = "Type a start point instead" }) {
   if (!code) return null;
   const { title, message } = locationErrorInfo(code);
   const canRetry = !["unsupported", "insecure"].includes(code);
@@ -19,7 +19,7 @@ export default function LocationNotice({ code, onRetry, onDismiss }) {
           )}
           {onDismiss && (
             <button type="button" className="btn btn-ghost" onClick={onDismiss}>
-              Type a start point instead
+              {dismissLabel}
             </button>
           )}
         </div>

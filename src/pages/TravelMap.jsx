@@ -7,6 +7,7 @@ import { getLiveBuses, getLocations } from '../lib/api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { LIVE_MIN_ZOOM, areaStatusText, useAreaVehicles } from '../hooks/useAreaVehicles';
 import { getCurrentPosition } from '../lib/geo';
+import LocationNotice from '../components/LocationNotice';
 import { readJSON, writeJSON } from '../lib/storage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import './TravelMap.css';
@@ -186,8 +187,9 @@ export default function TravelMap() {
       const pos = await getCurrentPosition();
       setMe([pos.lat, pos.lng]);
       setFlyTarget({ center: [pos.lat, pos.lng], zoom: Math.max(DEFAULT_ZOOM, view?.zoom ?? 0) });
-    } catch {
-      setLocateError("Couldn't get your location. Check that location is allowed for this site.");
+    } catch (code) {
+      // The real reason (blocked / unavailable / too slow), with the right steps for this browser
+      setLocateError(typeof code === 'string' ? code : 'unknown');
     } finally {
       setLocating(false);
     }
@@ -283,7 +285,9 @@ export default function TravelMap() {
               </span>
             )}
           </div>
-          {locateError && <p className="live-status live-status-error" role="alert">{locateError}</p>}
+          {locateError && (
+            <LocationNotice code={locateError} onRetry={showMyLocation} onDismiss={() => setLocateError('')} dismissLabel="Close" />
+          )}
 
           {showLive && (
             <p className={`live-status ${status.error ? 'live-status-error' : ''}`} role="status" aria-live="polite">

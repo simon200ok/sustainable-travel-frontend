@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { geolocationErrorCode } from "../lib/geo";
+import { geolocationErrorCode, rememberPosition } from "../lib/geo";
 
 function unsupportedReason() {
   if (!window.isSecureContext) return "insecure";
@@ -19,14 +19,16 @@ export function useLiveLocation(active) {
     const id = navigator.geolocation.watchPosition(
       (pos) => {
         setError(null);
-        setPosition({
+        const next = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
           heading: pos.coords.heading,
           speed: pos.coords.speed,
           at: pos.timestamp,
-        });
+        };
+        rememberPosition(next); // other pages ("My location" on the Live Map) can use it instantly
+        setPosition(next);
       },
       (err) => setError(geolocationErrorCode(err)),
       { enableHighAccuracy: true, maximumAge: 2_000, timeout: 20_000 },

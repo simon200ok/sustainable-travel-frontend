@@ -4,7 +4,7 @@ import { areaStatusText, projectVehicle, useAreaVehicles } from "../../hooks/use
 import { distanceMeters } from "../../lib/geo";
 import { readJSON, writeJSON } from "../../lib/storage";
 import { MODE_META } from "../../lib/format";
-import { SUNDERLAND } from "../../lib/geo";
+import { SUNDERLAND, getCurrentPosition, locationErrorInfo } from "../../lib/geo";
 import { boundsOf, decodePolyline, stepPath } from "../../lib/navigation";
 import ErrorBoundary from "../ErrorBoundary";
 import UserLocationMarker from "./UserLocationMarker";
@@ -62,16 +62,19 @@ function FollowUser({ position, following, onUserPan, zoom, mapKey }) {
 }
 
 // Shows the user's own area when the page opens, and again whenever "My location" is pressed
+// "request" = { n, lat, lng }: a fresh position fetched when "My location" was pressed
 function CenterOnUser({ position, enabled, request, mapKey }) {
   const map = useMap();
-  const lastRequest = useRef(request);
+  const lastRequest = useRef(request?.n ?? 0);
   useEffect(() => {
-    if (!map || !position) return;
-    const asked = request !== lastRequest.current;
-    lastRequest.current = request;
+    if (!map) return;
+    const asked = (request?.n ?? 0) !== lastRequest.current;
+    lastRequest.current = request?.n ?? 0;
+    const target = asked ? request : position;
+    if (!target) return;
     if (asked || (enabled && !centred.has(mapKey))) {
       centred.add(mapKey);
-      map.panTo(position);
+      map.panTo({ lat: target.lat, lng: target.lng });
       if ((map.getZoom() ?? 0) < 15) map.setZoom(16);
     }
   }, [map, position, enabled, request, mapKey]);
@@ -221,7 +224,25 @@ function PlannerMapInner({
   const inView = useInView(containerRef);
   const [loadError, setLoadError] = useState("");
   const [layers, setLayers] = useState(() => ({ transit: false, bicycling: false, traffic: false, buses: false, ...readJSON(LAYERS_KEY, {}) }));
-  const [recentre, setRecentre] = useState(0);
+  const [recentre, setRecentre] = useState(null); // { n, lat, lng }
+  const [findingMe, setFindingMe] = useState(false);
+  const [meProblem, setMeProblem] = useState("");
+  const [myFix, setMyFix] = useState(null);
+
+  // "My location": get the position now (or use one from the last minute), then centre on it
+  async function centreOnMe() {
+    setFindingMe(true);
+    setMeProblem("");
+    try {
+      const p = await getCurrentPosition();
+      setMyFix(p);
+      setRecentre((r) => ({ n: (r?.n ?? 0) + 1, lat: p.lat, lng: p.lng }));
+    } catch (code) {
+      setMeProblem(locationErrorInfo(code).title);
+    } finally {
+      setFindingMe(false);
+    }
+  }
   const [busStatus, setBusStatus] = useState("");
   // Google's cycle-lane layer switches to its own light map when it's the only Google layer on,
   // even in dark mode (Transit or Traffic keep it dark). The app can't change that, so say so.
@@ -315,9 +336,9 @@ function PlannerMapInner({
                   <span className="map-pin map-pin-cycle" aria-hidden="true">🅿️</span>
                 </AdvancedMarker>
               ))}
-            {userPosition && (
+            {(userPosition || myFix) && (
               <AdvancedMarker
-                position={userPosition}
+                position={{ lat: (userPosition || myFix).lat, lng: (userPosition || myFix).lng }}
                 title="You are here"
                 zIndex={1000}
                 anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
@@ -331,17 +352,22 @@ function PlannerMapInner({
         <div className="planner-map-fallback" aria-hidden="true" />
       )}
 
-      {!loadError && inView && (userPosition || compass?.needsPermission) && (
+      {!loadError && inView && (
         <div className="map-location-controls">
           {compass?.needsPermission && userPosition && (
             <button type="button" onClick={compass.requestPermission}>
               🧭 Show my direction
             </button>
           )}
-          {userPosition && !navigating && (
-            <button type="button" onClick={() => setRecentre((n) => n + 1)} aria-label="Centre the map on my location">
-              ◎ My location
+          {!navigating && (
+            <button type="button" onClick={centreOnMe} disabled={findingMe} aria-label="Centre the map on my location">
+              {findingMe ? <span className="spinner" /> : "◎"} {findingMe ? "Finding you…" : "My location"}
             </button>
+          )}
+          {meProblem && !navigating && (
+            <p className="map-location-problem" role="alert">
+              📍 {meProblem}
+            </p>
           )}
         </div>
       )}
