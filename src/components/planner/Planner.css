@@ -1304,6 +1304,46 @@ body.has-nav-bar {
   text-align: center;
 }
 
+/* Train / Metro platform */
+.platform-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+}
+
+.platform-chip {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--uos-navy);
+  color: #fff;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+:root[data-theme="dark"] .platform-chip {
+  background: #2E4A7A;
+}
+
+.platform-late {
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.platform-cancelled {
+  font-weight: 700;
+  color: var(--uos-red);
+}
+
+.platform-credit {
+  flex-basis: 100%;
+  font-size: 0.72rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
 /* Every step in the list can be tapped to look at it */
 .nav-step-btn {
   display: block;

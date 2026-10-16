@@ -99,6 +99,10 @@ export default function Privacy() {
               fetches these; your browser doesn't contact it.
             </li>
             <li>
+              <strong>National Rail Enquiries</strong>: live train platforms and times. Our server fetches these;
+              your browser doesn't contact it.
+            </li>
+            <li>
               <strong>Vercel, Render and Neon</strong> — host the website, the server and its database.
             </li>
           </ul>

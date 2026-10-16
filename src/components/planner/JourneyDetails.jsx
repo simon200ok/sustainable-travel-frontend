@@ -1,5 +1,6 @@
 import { MODE_META, formatDistance, formatDuration, formatKg, formatPrice, formatTime, formatWhen, transitLabel } from "../../lib/format";
 import { describeStep } from "../../lib/navigation";
+import PlatformInfo from "./PlatformInfo";
 
 const TRANSIT_ICON = { Bus: "🚌", Metro: "🚇", Train: "🚆", Transit: "🚍" };
 const MOVE = {
@@ -65,6 +66,7 @@ export default function JourneyDetails({ option }) {
                   <p className="tl-stop">
                     <span className="tl-time">{formatTime(t.departureTime)}</span> Get on at <strong>{t.departureStop}</strong>
                   </p>
+                  <PlatformInfo step={part.step} />
                   <p className="tl-sub">
                     {t.stopCount ? `${t.stopCount} stop${t.stopCount === 1 ? "" : "s"}` : "Ride"} · {formatDistance(part.step.distanceMeters)}
                     {t.agency && ` · ${t.agency}`}

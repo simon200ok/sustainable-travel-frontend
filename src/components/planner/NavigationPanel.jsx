@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { formatDistance, formatKg, formatTime, MODE_META, transitLabel } from "../../lib/format";
+import { formatDistance, formatKg, formatTime, MODE_META } from "../../lib/format";
 import { describeStep } from "../../lib/navigation";
 import { speak, speechSupported } from "../../lib/speech";
 import LocationNotice from "../LocationNotice";
+import PlatformInfo from "./PlatformInfo";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const MANEUVER_ICON = {
@@ -127,9 +128,7 @@ export default function NavigationPanel({ option, destination, position, locatio
                   {step.transit.stopCount ? `${step.transit.stopCount} stop${step.transit.stopCount === 1 ? "" : "s"}` : ""}
                   {step.transit.agency && `${step.transit.stopCount ? " · " : ""}${step.transit.agency}`}
                 </p>
-                {transitLabel(step.transit.vehicleType) !== "Bus" && (
-                  <p className="nav-transit-meta">Platform: check the departure screens at the station.</p>
-                )}
+                <PlatformInfo step={step} />
               </>
             ) : (
               <p className="nav-distance">

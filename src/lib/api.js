@@ -96,6 +96,16 @@ export const getFares = () => request("/fares", { cacheMs: 300_000 });
 export const logGreenJourney = (mode, distanceMeters) =>
   request("/impact/journeys", { method: "POST", body: { mode, distance_m: Math.round(distanceMeters) } });
 
+// Train / Metro platform from National Rail's live boards (backend matches the service)
+export function getPlatform({ lat, lng, depart, to }) {
+  const params = new URLSearchParams({ lat: lat.toFixed(5), lng: lng.toFixed(5), depart });
+  if (to) {
+    params.set("toLat", to.lat.toFixed(5));
+    params.set("toLng", to.lng.toFixed(5));
+  }
+  return request(`/rail/platform?${params}`, { cacheMs: 50_000, timeoutMs: 12_000 });
+}
+
 // Anonymous visitor counting (see lib/usage.js)
 export const recordVisit = (visit) => request("/usage/visit", { method: "POST", body: visit, timeoutMs: 8_000 });
 
