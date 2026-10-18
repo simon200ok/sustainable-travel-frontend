@@ -10,25 +10,35 @@ export default function PrivacyBanner() {
   const [choosing, setChoosing] = useState(false);
   if (choices.decided) return null;
 
+  // Maps already switched on from a map's "Show maps" button: only visit counting is left to ask about
+  const mapsOn = choices.maps;
+
   return (
     <section className="privacy-banner" aria-labelledby="privacy-banner-title">
       <div className="container">
         <h2 id="privacy-banner-title" className="privacy-banner-title">Your privacy choices</h2>
-        <p>
-          The maps here come from Google Maps and OpenStreetMap, and loading them shares your IP address with them. We'd
-          also like to count visits anonymously, with no cookies or IDs. Nothing optional loads until you choose. More
-          in our <Link to="/privacy">Privacy Notice</Link>.
-        </p>
+        {mapsOn ? (
+          <p>
+            Maps are on. We'd also like to count visits anonymously, with no cookies or IDs, to see how many people use
+            the app. Is that OK? More in our <Link to="/privacy">Privacy Notice</Link>.
+          </p>
+        ) : (
+          <p>
+            The maps here come from Google Maps and OpenStreetMap, and loading them shares your IP address with them. We'd
+            also like to count visits anonymously, with no cookies or IDs. Nothing optional loads until you choose. More
+            in our <Link to="/privacy">Privacy Notice</Link>.
+          </p>
+        )}
         {choosing ? (
           <PrivacyChoices />
         ) : (
           <div className="privacy-banner-actions">
-            {/* "Allow all" and "Essential only" look the same, so neither is pushed */}
+            {/* The yes and no buttons look the same, so neither is pushed */}
             <button type="button" className="privacy-banner-btn" onClick={() => saveChoices({ maps: true, stats: true })}>
-              Allow all
+              {mapsOn ? "Count my visits" : "Allow all"}
             </button>
-            <button type="button" className="privacy-banner-btn" onClick={() => saveChoices({ maps: false, stats: false })}>
-              Essential only
+            <button type="button" className="privacy-banner-btn" onClick={() => saveChoices({ maps: mapsOn, stats: false })}>
+              {mapsOn ? "No thanks" : "Essential only"}
             </button>
             <button type="button" className="privacy-banner-link" onClick={() => setChoosing(true)}>
               Choose

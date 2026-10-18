@@ -15,14 +15,17 @@ export const privacySignalOn = () => navigator.globalPrivacyControl === true;
 export function getChoices() {
   const saved = readJSON(KEY, null);
   return {
-    decided: Boolean(saved),
+    // Answered the privacy question (banner or Privacy page). Only switching maps on from a map
+    // doesn't count, so the banner still asks about visit counting.
+    decided: Boolean(saved) && saved.answered !== false,
     maps: saved?.maps === true,
     stats: saved?.stats === true && !privacySignalOn(),
   };
 }
 
-export function saveChoices({ maps, stats }) {
-  const next = { maps: Boolean(maps), stats: Boolean(stats) && !privacySignalOn(), at: new Date().toISOString() };
+/** `answered: false` = changed from a map's "Show maps" button, without answering the banner. */
+export function saveChoices({ maps, stats }, { answered = true } = {}) {
+  const next = { maps: Boolean(maps), stats: Boolean(stats) && !privacySignalOn(), answered, at: new Date().toISOString() };
   writeJSON(KEY, next);
   try {
     window.localStorage.removeItem(OLD_OPT_OUT_KEY);
