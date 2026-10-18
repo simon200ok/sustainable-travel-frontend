@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import './Footer.css';
 
 export default function Footer() {
@@ -24,6 +24,8 @@ export default function Footer() {
             <NavLink to="/sustainability">Sustainability Tips</NavLink>
             <NavLink to="/contact">Contact Us</NavLink>
             <NavLink to="/privacy">Privacy Notice</NavLink>
+            <Link to="/privacy#choices">Privacy Choices</Link>
+            <NavLink to="/terms">Terms of Use</NavLink>
             <NavLink to="/accessibility">Accessibility</NavLink>
             <NavLink to="/admin">Admin Sign-in</NavLink>
           </div>

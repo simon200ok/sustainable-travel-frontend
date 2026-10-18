@@ -53,7 +53,7 @@ export default defineConfig(({ mode }) => {
           // Pages are fetched from the network first (newest version as the app opens);
           // the saved copy is only used offline or if the network takes more than 4 seconds
           navigateFallback: null,
-          globPatterns: ['**/*.{js,css,ico,png,webp,svg}'],
+          globPatterns: ['**/*.{js,css,ico,png,webp,svg,woff2}'],
           // The admin area is never available offline
           globIgnores: ['**/AdminApp-*'],
           cleanupOutdatedCaches: true,
@@ -81,15 +81,6 @@ export default defineConfig(({ mode }) => {
                 networkTimeoutSeconds: 5,
                 expiration: { maxEntries: 40, maxAgeSeconds: 7 * 24 * 3600 },
                 cacheableResponse: { statuses: [200] },
-              },
-            },
-            {
-              urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts',
-                expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 3600 },
-                cacheableResponse: { statuses: [0, 200] },
               },
             },
             {

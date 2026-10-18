@@ -10,6 +10,7 @@ import { trainsStatusText, useAreaTrains } from '../hooks/useAreaTrains';
 import { getCurrentPosition, locationAlreadyAllowed, watchLocationPermission } from '../lib/geo';
 import { useLiveLocation } from '../hooks/useLiveLocation';
 import LocationNotice from '../components/LocationNotice';
+import MapGate from '../components/MapGate';
 import { readJSON, writeJSON } from '../lib/storage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import './TravelMap.css';
@@ -374,106 +375,109 @@ export default function TravelMap() {
           )}
 
           <div className="map-wrapper">
-            <MapContainer
-              center={lastView?.center ?? SUNDERLAND_CENTER}
-              zoom={lastView?.zoom ?? DEFAULT_ZOOM}
-              scrollWheelZoom={true}
-              style={{ height: '100%', width: '100%' }}
-              className="travel-map"
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Bus data: <a href="https://www.bus-data.dft.gov.uk/">BODS</a> (OGL v3.0)'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <FlyTo target={flyTarget} />
-              <ViewWatcher onView={onView} />
-              {me && <Marker position={me} icon={meIcon} zIndexOffset={2000} title="You are here" />}
-              {allBuses &&
-                otherBuses.map((bus) => (
-                  <Marker
-                    key={`a-${bus.operatorRef}-${bus.vehicleRef || `${bus.route}-${bus.lat}`}`}
-                    position={[bus.lat, bus.lng]}
-                    icon={bus.icon}
-                    zIndexOffset={500}
-                  >
-                    <Popup>
-                      <div className="map-popup">
-                        <h3>Bus {bus.route}</h3>
-                        <p>
-                          {bus.origin && bus.destination ? `${bus.origin} → ${bus.destination}` : bus.destination ? `To ${bus.destination}` : 'Live bus'}
-                          <br />
-                          Operator: {bus.operatorRef || 'unknown'} · updated {secondsAgo(bus.recordedAt)}
-                        </p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              {showTrains &&
-                trainMarkers.map((train) => (
-                  <Marker key={train.id} position={[train.lat, train.lng]} icon={train.icon} zIndexOffset={600}>
-                    <Popup>
-                      <div className="map-popup">
-                        <h3>{train.kind === 'metro' ? 'Metro' : 'Train'} to {train.destination || 'unknown'}</h3>
-                        <p>
-                          {train.operator}
-                          <br />
-                          {train.moving ? (
-                            <>
-                              Next stop: {train.nextStop}
-                              {train.nextTime && ` (expected ${train.nextTime})`}
-                              {train.delayMinutes > 0 && <> · {train.delayMinutes} min late</>}
-                            </>
-                          ) : (
-                            <>Delayed at {train.lastStop}. No new time yet.</>
-                          )}
-                          <br />
-                          <em>Position estimated from live times, not GPS.</em>
-                        </p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              {markers.map((loc) => (
-                <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={loc.icon}>
-                  <Popup>
-                    <div className="map-popup">
-                      <h3>{loc.name}</h3>
-                      <p>{loc.description}</p>
-                      {loc.nearby_transport?.length > 0 && (
-                        <div className="popup-transport">
-                          <strong>Nearby:</strong>
-                          <ul>
-                            {loc.nearby_transport.map((item) => (
-                              <li key={item}>{item}</li>
-                            ))}
-                          </ul>
+            {/* OpenStreetMap's map pictures only load once the visitor has allowed maps */}
+            <MapGate provider="OpenStreetMap">
+              <MapContainer
+                center={lastView?.center ?? SUNDERLAND_CENTER}
+                zoom={lastView?.zoom ?? DEFAULT_ZOOM}
+                scrollWheelZoom={true}
+                style={{ height: '100%', width: '100%' }}
+                className="travel-map"
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Bus data: <a href="https://www.bus-data.dft.gov.uk/">BODS</a> (OGL v3.0)'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <FlyTo target={flyTarget} />
+                <ViewWatcher onView={onView} />
+                {me && <Marker position={me} icon={meIcon} zIndexOffset={2000} title="You are here" />}
+                {allBuses &&
+                  otherBuses.map((bus) => (
+                    <Marker
+                      key={`a-${bus.operatorRef}-${bus.vehicleRef || `${bus.route}-${bus.lat}`}`}
+                      position={[bus.lat, bus.lng]}
+                      icon={bus.icon}
+                      zIndexOffset={500}
+                    >
+                      <Popup>
+                        <div className="map-popup">
+                          <h3>Bus {bus.route}</h3>
+                          <p>
+                            {bus.origin && bus.destination ? `${bus.origin} → ${bus.destination}` : bus.destination ? `To ${bus.destination}` : 'Live bus'}
+                            <br />
+                            Operator: {bus.operatorRef || 'unknown'} · updated {secondsAgo(bus.recordedAt)}
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-              {showLive &&
-                buses.map((bus) => (
-                  <Marker
-                    key={bus.vehicleRef || `${bus.route}-${bus.lat}`}
-                    position={[bus.lat, bus.lng]}
-                    icon={createBusIcon(bus)}
-                    zIndexOffset={1000}
-                  >
+                      </Popup>
+                    </Marker>
+                  ))}
+                {showTrains &&
+                  trainMarkers.map((train) => (
+                    <Marker key={train.id} position={[train.lat, train.lng]} icon={train.icon} zIndexOffset={600}>
+                      <Popup>
+                        <div className="map-popup">
+                          <h3>{train.kind === 'metro' ? 'Metro' : 'Train'} to {train.destination || 'unknown'}</h3>
+                          <p>
+                            {train.operator}
+                            <br />
+                            {train.moving ? (
+                              <>
+                                Next stop: {train.nextStop}
+                                {train.nextTime && ` (expected ${train.nextTime})`}
+                                {train.delayMinutes > 0 && <> · {train.delayMinutes} min late</>}
+                              </>
+                            ) : (
+                              <>Delayed at {train.lastStop}. No new time yet.</>
+                            )}
+                            <br />
+                            <em>Position estimated from live times, not GPS.</em>
+                          </p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+                {markers.map((loc) => (
+                  <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={loc.icon}>
                     <Popup>
                       <div className="map-popup">
-                        <h3>Bus {bus.route}</h3>
-                        <p>
-                          {bus.origin && bus.destination ? `${bus.origin} → ${bus.destination}` : 'University bus'}
-                          <br />
-                          Position updated {secondsAgo(bus.recordedAt)}
-                        </p>
+                        <h3>{loc.name}</h3>
+                        <p>{loc.description}</p>
+                        {loc.nearby_transport?.length > 0 && (
+                          <div className="popup-transport">
+                            <strong>Nearby:</strong>
+                            <ul>
+                              {loc.nearby_transport.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </Popup>
                   </Marker>
                 ))}
-            </MapContainer>
+                {showLive &&
+                  buses.map((bus) => (
+                    <Marker
+                      key={bus.vehicleRef || `${bus.route}-${bus.lat}`}
+                      position={[bus.lat, bus.lng]}
+                      icon={createBusIcon(bus)}
+                      zIndexOffset={1000}
+                    >
+                      <Popup>
+                        <div className="map-popup">
+                          <h3>Bus {bus.route}</h3>
+                          <p>
+                            {bus.origin && bus.destination ? `${bus.origin} → ${bus.destination}` : 'University bus'}
+                            <br />
+                            Position updated {secondsAgo(bus.recordedAt)}
+                          </p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+              </MapContainer>
+            </MapGate>
           </div>
 
           <Link to="/contact?topic=travel-info" className="report-link">

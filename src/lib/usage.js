@@ -1,29 +1,13 @@
 import { recordVisit } from "./api";
+import { getChoices } from "./consent";
 import { readJSON, writeJSON } from "./storage";
 
-// Privacy-friendly visitor counting. This device remembers only the dates it was last counted;
-// the server receives yes/no flags ("first visit today?") and keeps running totals.
-// No cookies, IDs, IP addresses or browsing history are stored anywhere.
+// Privacy-friendly visitor counting, only for visitors who have said yes to it (see lib/consent.js).
+// This device remembers only the dates it was last counted; the server receives yes/no flags
+// ("first visit today?") and keeps running totals. No cookies, IDs, IP addresses or browsing
+// history are stored anywhere.
 const KEY = "uos-usage";
-const OPT_OUT_KEY = "uos-usage-optout";
 const PAGES = new Set(["/", "/ticketing", "/zones", "/map", "/sustainability", "/contact", "/privacy", "/accessibility"]);
-
-export const privacySignalOn = () => navigator.globalPrivacyControl === true;
-
-export function usageOptedOut() {
-  return privacySignalOn() || readJSON(OPT_OUT_KEY, false) === true;
-}
-
-export function setUsageOptOut(optOut) {
-  writeJSON(OPT_OUT_KEY, optOut);
-  if (optOut) {
-    try {
-      window.localStorage.removeItem(KEY);
-    } catch {
-      // storage blocked: nothing stored anyway
-    }
-  }
-}
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -38,7 +22,7 @@ function isoWeek(date) {
 }
 
 export function countVisit(pathname) {
-  if (import.meta.env.DEV || pathname.startsWith("/admin") || navigator.webdriver || usageOptedOut()) return;
+  if (import.meta.env.DEV || pathname.startsWith("/admin") || navigator.webdriver || !getChoices().stats) return;
 
   const now = new Date();
   const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;

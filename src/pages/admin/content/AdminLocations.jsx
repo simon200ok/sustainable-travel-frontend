@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getLocations, getZones } from '../../../lib/api';
 import { createLocation, deleteLocation, updateLocation } from '../../../lib/adminApi';
+import MapGate from '../../../components/MapGate';
 
 const TYPES = [
   { value: 'cycle_park', label: 'Cycle parking' },
@@ -101,12 +102,15 @@ function LocationForm({ initial, zones, onSaved, onCancel, onDeleted }) {
         <div>
           <p className="admin-hint">Click the map (or drag the pin) to set the exact position.</p>
           <div className="admin-mini-map">
-            <MapContainer center={position} zoom={17} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
-              <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <ClickToPlace onPick={place} />
-              <Recentre position={position} />
-              <Marker position={position} icon={pin} draggable eventHandlers={{ dragend: (e) => place(e.target.getLatLng()) }} />
-            </MapContainer>
+            {/* Map pictures from OpenStreetMap only load once maps are allowed; the boxes above always work */}
+            <MapGate provider="OpenStreetMap">
+              <MapContainer center={position} zoom={17} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
+                <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <ClickToPlace onPick={place} />
+                <Recentre position={position} />
+                <Marker position={position} icon={pin} draggable eventHandlers={{ dragend: (e) => place(e.target.getLatLng()) }} />
+              </MapContainer>
+            </MapGate>
           </div>
         </div>
       </div>

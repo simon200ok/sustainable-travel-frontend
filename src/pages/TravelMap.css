@@ -183,6 +183,11 @@ button.legend-item {
   font-weight: 800;
 }
 
+/* The dark theme's lighter blue needs dark text to stay readable */
+:root[data-theme="dark"] .legend-dot-live {
+  color: var(--uos-grey-black);
+}
+
 .campus-switch {
   display: flex;
   border: 1px solid var(--uos-grey);

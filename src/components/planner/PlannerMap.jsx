@@ -6,7 +6,9 @@ import { readJSON, writeJSON } from "../../lib/storage";
 import { MODE_META } from "../../lib/format";
 import { SUNDERLAND, getCurrentPosition, locationErrorInfo } from "../../lib/geo";
 import { boundsOf, decodePolyline, stepPath } from "../../lib/navigation";
+import { usePrivacyChoices } from "../../lib/consent";
 import ErrorBoundary from "../ErrorBoundary";
+import MapGate from "../MapGate";
 import UserLocationMarker from "./UserLocationMarker";
 
 const BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY;
@@ -265,6 +267,8 @@ function PlannerMapInner({
 }) {
   const containerRef = useRef(null);
   const inView = useInView(containerRef);
+  // Google Maps only loads once the visitor has allowed maps (privacy choices)
+  const mapsAllowed = usePrivacyChoices().maps;
   const [loadError, setLoadError] = useState("");
   const layersKey = navigating ? TRIP_LAYERS_KEY : PLANNER_LAYERS_KEY;
   const [layers, setLayers] = useState(() => ({ transit: false, bicycling: false, traffic: false, buses: !navigating, ...readJSON(layersKey, {}) }));
@@ -331,6 +335,8 @@ function PlannerMapInner({
         <div className="planner-map-fallback" role="alert">
           <p>🗺️ {loadError} Your route options and directions still work below.</p>
         </div>
+      ) : inView && !mapsAllowed ? (
+        <MapGate provider="Google Maps" />
       ) : inView ? (
         <APIProvider apiKey={BROWSER_KEY} language="en-GB" region="GB" onError={() => setLoadError("The map couldn't load. Check your connection.")}>
           <Map
@@ -403,7 +409,7 @@ function PlannerMapInner({
         <div className="planner-map-fallback" aria-hidden="true" />
       )}
 
-      {!loadError && inView && (
+      {!loadError && inView && mapsAllowed && (
         <div className="map-location-controls">
           {compass?.needsPermission && userPosition && (
             <button type="button" onClick={compass.requestPermission}>
@@ -424,7 +430,7 @@ function PlannerMapInner({
         </div>
       )}
 
-      {!loadError && inView && (
+      {!loadError && inView && mapsAllowed && (
         <div className="map-layer-toggles" role="group" aria-label="Map layers">
           {[
             ["transit", "🚇 Transit"],
@@ -445,7 +451,7 @@ function PlannerMapInner({
         </div>
       )}
 
-      {!loadError && inView && ((layers.buses && busStatus) || cycleNote) && (
+      {!loadError && inView && mapsAllowed && ((layers.buses && busStatus) || cycleNote) && (
         <p className="map-bus-status" role="status" aria-live="polite">
           {cycleNote}
           {cycleNote && layers.buses && busStatus && <br />}

@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
 import InstallBanner from './components/InstallBanner';
+import PrivacyBanner from './components/PrivacyBanner';
 import UpdateBanner from './components/UpdateBanner';
 import ActiveNavigation from './components/planner/ActiveNavigation';
 import { JourneyProvider } from './context/JourneyContext';
@@ -16,8 +17,10 @@ import Sustainability from './pages/Sustainability';
 import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
 import Accessibility from './pages/Accessibility';
+import Terms from './pages/Terms';
 import { restoreReminders } from './lib/reminders';
 import { speak } from './lib/speech';
+import { usePrivacyChoices } from './lib/consent';
 import { countVisit } from './lib/usage';
 import './components/AppBanners.css';
 
@@ -36,13 +39,20 @@ function NotFound() {
   );
 }
 
-// Anonymous visitor counting: one call per page opened (see the Privacy page)
+// Anonymous visitor counting: one call per page opened, only if the visitor allowed it (see the Privacy page)
 function VisitCounter() {
   const { pathname } = useLocation();
+  const { stats } = usePrivacyChoices();
   useEffect(() => {
     countVisit(pathname);
-  }, [pathname]);
+  }, [pathname, stats]);
   return null;
+}
+
+// The privacy question comes first; the install suggestion waits until it's answered
+function TopBanners() {
+  const { decided } = usePrivacyChoices();
+  return decided ? <InstallBanner /> : <PrivacyBanner />;
 }
 
 // Shows leave-by reminders in the app (alongside any system notification)
@@ -76,7 +86,7 @@ function App() {
     <JourneyProvider>
       <a href="#main" className="visually-hidden">Skip to content</a>
       <OfflineBanner />
-      <InstallBanner />
+      <TopBanners />
       <Navbar />
       <main id="main" style={{ flex: 1 }}>
         <ErrorBoundary>
@@ -89,6 +99,7 @@ function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/accessibility" element={<Accessibility />} />
+            <Route path="/terms" element={<Terms />} />
             <Route
               path="/admin/*"
               element={

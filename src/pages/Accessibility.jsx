@@ -3,7 +3,7 @@ import './Privacy.css';
 
 // Update these when the statement is reviewed or the app is re-tested
 const PREPARED = '8 October 2026';
-const LAST_REVIEWED = '16 October 2026';
+const LAST_REVIEWED = '18 October 2026';
 const LAST_TESTED = '8 October 2026';
 
 export default function Accessibility() {
@@ -100,7 +100,9 @@ export default function Accessibility() {
           <h3>Maps</h3>
           <p>
             Maps can be hard to make fully accessible, so we provide the essential information from them as text as well.
-            Journey options, turn-by-turn steps, stop names and campus information are all available as text.
+            Journey options, turn-by-turn steps, stop names and campus information are all available as text. Maps only
+            load after you allow them in your privacy choices; until then, a placeholder explains this and has a button to
+            show them, and everything else on the page works without them.
           </p>
 
           <h2>What we're doing to improve accessibility</h2>
