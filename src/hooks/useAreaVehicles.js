@@ -7,8 +7,16 @@ export const LIVE_MIN_ZOOM = 12;
 const POLL_MS = 20_000;
 const DEBOUNCE_MS = 600;
 // The server accepts areas up to 0.6° × 0.35°; wider screens ask for the middle of the view
-const HALF_LNG = 0.29;
-const HALF_LAT = 0.17;
+// (leaving room for the grid below)
+const HALF_LNG = 0.28;
+const HALF_LAT = 0.16;
+// Small views (a trip map zoomed in on you) load at least about 3 km around their middle, so buses
+// heading your way are already there when they come into view
+const MIN_HALF_LNG = 0.025;
+const MIN_HALF_LAT = 0.015;
+// The area asked for is snapped to a grid, so a map that moves with you (or a small drag) keeps
+// asking for the same area instead of restarting the request every second
+const GRID = 0.01;
 
 export function clampBounds({ west, south, east, north }) {
   const cx = (west + east) / 2;
@@ -21,26 +29,57 @@ export function clampBounds({ west, south, east, north }) {
   };
 }
 
+// The national feed sometimes leaves a bus out of one update; keep it for up to a minute
+// rather than making it blink off the map
+const KEEP_MISSING_MS = 60_000;
+const vehicleKey = (v) => `${v.operatorRef}-${v.vehicleRef || `${v.route}-${v.lat}-${v.lng}`}`;
+
+export function keepRecentlySeen(before, now, area, nowMs = Date.now()) {
+  const fresh = new Set(now.map(vehicleKey));
+  const kept = before.filter(
+    (v) =>
+      !fresh.has(vehicleKey(v)) &&
+      nowMs - (v.seenAt ?? 0) < KEEP_MISSING_MS &&
+      v.lat >= area.south && v.lat <= area.north && v.lng >= area.west && v.lng <= area.east,
+  );
+  return [...now.map((v) => ({ ...v, seenAt: nowMs })), ...kept];
+}
+
+/** The area to load for a map view: the view (at most the server's limit), at least ~3 km across, snapped outwards to the grid. */
+export function requestArea(viewBounds) {
+  const c = clampBounds(viewBounds);
+  const cx = (c.west + c.east) / 2;
+  const cy = (c.south + c.north) / 2;
+  const snap = (v, round) => Number((round(v / GRID) * GRID).toFixed(4));
+  return {
+    west: snap(Math.min(c.west, cx - MIN_HALF_LNG), Math.floor),
+    south: snap(Math.min(c.south, cy - MIN_HALF_LAT), Math.floor),
+    east: snap(Math.max(c.east, cx + MIN_HALF_LNG), Math.ceil),
+    north: snap(Math.max(c.north, cy + MIN_HALF_LAT), Math.ceil),
+  };
+}
+
 /**
- * Live buses (every operator) inside the area the map is showing.
+ * Live buses (every operator) in and around the area the map is showing.
  * `view` = { bounds: { west, south, east, north }, zoom }; only that area is loaded,
  * and it's refreshed every 20 s while the page is visible.
  */
 export function useAreaVehicles(view, enabled) {
   const online = useOnlineStatus();
   const [state, setState] = useState({ vehicles: [], total: 0, status: "idle", message: "", updatedAt: null });
-  const viewRef = useRef(view);
-  viewRef.current = view;
-  const b = view?.bounds;
-  const viewKey = b ? `${view.zoom}|${b.west.toFixed(3)}|${b.south.toFixed(3)}|${b.east.toFixed(3)}|${b.north.toFixed(3)}` : "";
+  const zoomedIn = (view?.zoom ?? 0) >= LIVE_MIN_ZOOM;
+  const area = view?.bounds ? requestArea(view.bounds) : null;
+  const areaRef = useRef(area);
+  areaRef.current = area;
+  const areaKey = area ? `${zoomedIn}|${area.west}|${area.south}|${area.east}|${area.north}` : "";
 
   useEffect(() => {
-    if (!enabled || !viewKey) return undefined;
+    if (!enabled || !areaKey) return undefined;
     if (!online) {
       setState((s) => ({ ...s, status: "offline" }));
       return undefined;
     }
-    if (viewRef.current.zoom < LIVE_MIN_ZOOM) {
+    if (!zoomedIn) {
       setState({ vehicles: [], total: 0, status: "zoom", message: "", updatedAt: null });
       return undefined;
     }
@@ -48,7 +87,7 @@ export function useAreaVehicles(view, enabled) {
     let cancelled = false;
     let timer;
     let controller;
-    const bounds = clampBounds(viewRef.current.bounds);
+    const bounds = areaRef.current;
 
     async function poll() {
       if (document.visibilityState === "visible") {
@@ -57,7 +96,10 @@ export function useAreaVehicles(view, enabled) {
         try {
           const data = await getVehiclesInArea(bounds, { signal: controller.signal });
           if (cancelled) return;
-          setState({ vehicles: data.vehicles, total: data.total, status: "ok", message: "", updatedAt: new Date() });
+          setState((s) => {
+            const vehicles = keepRecentlySeen(s.vehicles, data.vehicles, bounds);
+            return { vehicles, total: vehicles.length, status: "ok", message: "", updatedAt: new Date() };
+          });
         } catch (err) {
           if (cancelled || controller.signal.aborted) return;
           setState((s) => ({ ...s, vehicles: err.status === 422 ? [] : s.vehicles, status: "error", message: err.message }));
@@ -80,7 +122,7 @@ export function useAreaVehicles(view, enabled) {
       controller?.abort();
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [enabled, online, viewKey]);
+  }, [enabled, online, areaKey, zoomedIn]);
 
   return enabled ? state : { vehicles: [], total: 0, status: "idle", message: "", updatedAt: null };
 }
@@ -118,7 +160,7 @@ export function areaStatusText(state) {
       return `⚠️ ${state.message}`;
     case "ok":
       return state.vehicles.length
-        ? `🟢 ${state.total} live bus${state.total === 1 ? "" : "es"} in view · updated ${state.updatedAt.toLocaleTimeString("en-GB")}`
+        ? `🟢 ${state.total} live bus${state.total === 1 ? "" : "es"} nearby · updated ${state.updatedAt.toLocaleTimeString("en-GB")}`
         : "No live buses reporting in this area right now.";
     default:
       return "";

@@ -124,6 +124,33 @@ function MapLayers({ layers }) {
 }
 
 // Every bus reporting a live position inside the area on screen (any operator, across England)
+const ON_BOARD_SPEED = 4; // m/s (about 9 mph): faster than walking, so you're on a vehicle
+const ON_BOARD_DISTANCE = 150; // metres between you and the bus (GPS and bus reports both lag)
+
+/**
+ * The one bus you're sitting on, if any: on your route's line, close to you, and only while you're
+ * moving at vehicle speed in the same direction. Waiting at the stop, nothing is hidden.
+ */
+function ridingBus(vehicles, ridingLine, me) {
+  if (!ridingLine || !me || !((me.speed ?? 0) > ON_BOARD_SPEED)) return null;
+  const line = String(ridingLine).toLowerCase();
+  let best = null;
+  let bestM = ON_BOARD_DISTANCE;
+  for (const v of vehicles) {
+    if (String(v.route).toLowerCase() !== line) continue;
+    if (Number.isFinite(me.heading) && Number.isFinite(v.bearing)) {
+      const turn = Math.abs(((v.bearing - me.heading + 540) % 360) - 180);
+      if (turn > 60) continue; // going the other way
+    }
+    const m = distanceMeters(me, v);
+    if (m < bestM) {
+      best = v;
+      bestM = m;
+    }
+  }
+  return best;
+}
+
 function LiveVehicles({ onStatus, userPosition, ridingLine }) {
   const map = useMap();
   const [view, setView] = useState(null);
@@ -167,9 +194,11 @@ function LiveVehicles({ onStatus, userPosition, ridingLine }) {
     return () => clearInterval(timer);
   }, [vehicles]);
 
+  const onBoard = ridingBus(projected, ridingLine, userPosition);
   const shown = projected
-    // The bus you're riding is where your own arrow is, so don't draw a second, lagging copy
-    .filter((v) => !(ridingLine && userPosition && String(v.route).toLowerCase() === String(ridingLine).toLowerCase() && distanceMeters(userPosition, v) < 500))
+    // The bus you're riding is where your own arrow is, so don't draw a second, lagging copy of it.
+    // Every other bus stays, including the one you're waiting for and others on the same route.
+    .filter((v) => v !== onBoard)
     .slice(0, 400);
 
   return shown.map((v) => (
@@ -321,6 +350,9 @@ function PlannerMapInner({
             headingInteractionEnabled
             tiltInteractionEnabled
             rotateControl
+            // No camera control (arrow pad): drag or pinch to move, zoom buttons, and arrow / +/- keys still work
+            cameraControl={false}
+            zoomControl
             mapTypeControl={!navigating}
             streetViewControl={false}
             fullscreenControl
