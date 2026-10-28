@@ -253,15 +253,17 @@ function requestPosition(options) {
  * 2. If that fails (other than being blocked), keep listening for a precise fix for up to 30 s.
  * A position the app already has from the last minute is used straight away.
  * The live tracking that follows (useLiveLocation) then sharpens the position.
+ * `maxAgeMs`: the oldest reading that's acceptable (e.g. 15 s when planning from "Your location",
+ * so it's where the user is now, not where they were a few minutes ago).
  */
-export async function getCurrentPosition() {
+export async function getCurrentPosition({ maxAgeMs } = {}) {
   if (!window.isSecureContext) throw "insecure";
   if (!("geolocation" in navigator)) throw "unsupported";
-  const recent = recentPosition();
+  const recent = recentPosition(maxAgeMs ?? 60_000);
   if (recent) return recent;
   let pos;
   try {
-    pos = await requestPosition({ enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 });
+    pos = await requestPosition({ enableHighAccuracy: false, maximumAge: maxAgeMs ?? 300_000, timeout: 10_000 });
   } catch (code) {
     if (code === "denied") {
       noteAllowed(false);

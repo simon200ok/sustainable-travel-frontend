@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useJourney } from "../../context/JourneyContext";
 import { getLocations, planJourney } from "../../lib/api";
 import { ensureNotificationPermission } from "../../lib/reminders";
-import { getCurrentPosition, locationHelp, locationPermissionState, watchLocationPermission } from "../../lib/geo";
+import { distanceMeters, getCurrentPosition, locationHelp, locationPermissionState, watchLocationPermission } from "../../lib/geo";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
 import { useLiveLocation } from "../../hooks/useLiveLocation";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
@@ -18,6 +18,8 @@ import WhenPicker, { whenPayload } from "./WhenPicker";
 import "./Planner.css";
 
 const YOUR_LOCATION = "Your location";
+// "Your location" means where you are now: a reading older than this is replaced before searching
+const FRESH_LOCATION_MS = 15_000;
 const SCOPES = [
   { id: "local", label: "🎓 Campus travel", hint: "Suggestions near you, Sunderland and London campuses" },
   { id: "uk", label: "🗺️ Anywhere in the UK", hint: "Search any town, station or address in the UK" },
@@ -60,7 +62,7 @@ export default function JourneyPlanner() {
     // If the browser hasn't answered after a few seconds, its question may be hidden: say where to look
     const slowTimer = setTimeout(() => setLocatingSlow(true), 5000);
     try {
-      const pos = await getCurrentPosition();
+      const pos = await getCurrentPosition({ maxAgeMs: FRESH_LOCATION_MS });
       setOrigin({ label: YOUR_LOCATION, lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, isCurrent: true });
       setTracking(true);
       return null;
@@ -99,16 +101,40 @@ export default function JourneyPlanner() {
     };
   }, [needsLocation, locate]);
 
-  // The first fix may be approximate (it's quicker): sharpen the start point as better GPS readings arrive
+  // "Your location" follows you: it moves when you've moved further than the GPS margin of error
+  // (for example during a trip, while this page stays open underneath), and it sharpens as more
+  // accurate readings arrive (the first fix may be approximate because it's quicker)
   useEffect(() => {
     const p = live.position;
     if (!p || !Number.isFinite(p.accuracy)) return;
     setOrigin((o) => {
       if (!o?.isCurrent) return o;
-      if (Number.isFinite(o.accuracy) && p.accuracy > o.accuracy * 0.7) return o;
+      const sharper = !Number.isFinite(o.accuracy) || p.accuracy <= o.accuracy * 0.7;
+      const moved = distanceMeters(o, p) > Math.max(25, p.accuracy, Number.isFinite(o.accuracy) ? o.accuracy : 0);
+      if (!sharper && !moved) return o;
       return { ...o, lat: p.lat, lng: p.lng, accuracy: p.accuracy };
     });
   }, [live.position]);
+
+  // Before searching (or refreshing a plan) from "Your location": use a reading from the last
+  // 15 seconds, or ask for a new one, so the journey starts from where you are now
+  const liveRef = useRef(live.position);
+  liveRef.current = live.position;
+  const freshOrigin = useCallback(async (from) => {
+    if (!from?.isCurrent) return from;
+    const p = liveRef.current;
+    let pos = p && Date.now() - p.at < FRESH_LOCATION_MS ? p : null;
+    if (!pos) {
+      try {
+        pos = await getCurrentPosition({ maxAgeMs: FRESH_LOCATION_MS });
+      } catch {
+        return from; // couldn't get a new reading: use the last one we had
+      }
+    }
+    const next = { ...from, lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy };
+    setOrigin((o) => (o?.isCurrent ? next : o));
+    return next;
+  }, []);
 
   // Start point defaults to the user's current location (asks the browser on first visit)
   useEffect(() => {
@@ -145,6 +171,7 @@ export default function JourneyPlanner() {
       setResult(null);
       setSelected(null);
       try {
+        from = await freshOrigin(from);
         const data = await planJourney(
           { label: from.label, lat: from.lat, lng: from.lng },
           { label: to.label, lat: to.lat, lng: to.lng },
@@ -159,7 +186,7 @@ export default function JourneyPlanner() {
         setSearching(false);
       }
     },
-    [origin, destination, online, when],
+    [origin, destination, online, when, freshOrigin],
   );
 
   // Changing the time after a search updates the results (after a short pause while typing)
@@ -182,12 +209,14 @@ export default function JourneyPlanner() {
     // "get off soon" notifications. Asking must happen straight from a tap on iPhone.
     if (option.steps?.some((s) => s.transit)) await ensureNotificationPermission();
     let chosen = option;
+    let from = origin;
     const stale = result?.when?.type !== "depart" && result?.when?.type !== "arrive" && Date.now() - Date.parse(result?.generatedAt) > 3 * 60_000;
     if (stale && online) {
       setStarting(true);
       try {
+        from = await freshOrigin(origin);
         const fresh = await planJourney(
-          { label: origin.label, lat: origin.lat, lng: origin.lng },
+          { label: from.label, lat: from.lat, lng: from.lng },
           { label: destination.label, lat: destination.lat, lng: destination.lng },
         );
         setResult(fresh);
@@ -199,7 +228,7 @@ export default function JourneyPlanner() {
       }
     }
     setSelected(chosen);
-    startTrip(origin, destination, chosen);
+    startTrip(from, destination, chosen);
   }
 
   const quickOriginOptions = useMemo(
