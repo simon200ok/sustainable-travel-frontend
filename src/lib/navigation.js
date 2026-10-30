@@ -42,6 +42,64 @@ function distanceToSegment(p, a, b) {
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
+/**
+ * Where a point is along a path: metres from the start to the nearest place on it (`along`),
+ * how far the point is from the path (`offset`), and the path's total `length`.
+ */
+export function alongPath(point, path) {
+  if (!path.length) return { along: 0, offset: Infinity, length: 0 };
+  const k = Math.cos((path[0].lat * Math.PI) / 180) * 111_320;
+  const xy = (p) => [p.lng * k, p.lat * 110_540];
+  const [px, py] = xy(point);
+  let walked = 0;
+  let best = { along: 0, offset: Math.hypot(px - xy(path[0])[0], py - xy(path[0])[1]) };
+  for (let i = 1; i < path.length; i += 1) {
+    const [ax, ay] = xy(path[i - 1]);
+    const [bx, by] = xy(path[i]);
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len = Math.hypot(dx, dy);
+    if (len) {
+      const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (len * len)));
+      const offset = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      if (offset < best.offset) best = { along: walked + t * len, offset };
+    }
+    walked += len;
+  }
+  return { ...best, length: walked };
+}
+
+const RAIL = new Set(["SUBWAY", "METRO_RAIL", "LIGHT_RAIL", "TRAM", "MONORAIL", "RAIL", "HEAVY_RAIL", "COMMUTER_TRAIN", "HIGH_SPEED_TRAIN", "LONG_DISTANCE_TRAIN"]);
+const METRO = new Set(["SUBWAY", "METRO_RAIL", "LIGHT_RAIL", "TRAM", "MONORAIL"]);
+const BUS = new Set(["BUS", "INTERCITY_BUS", "TROLLEYBUS", "SHARE_TAXI"]);
+
+// Typical speeds (m/s), used for timings when GPS speed isn't available yet
+export const TYPICAL_SPEED = { bus: 6, metro: 11, train: 18 };
+
+/** "bus" | "metro" | "train" for a bus / Metro / train step. */
+export function vehicleKind(step) {
+  const type = step.transit?.vehicleType || "";
+  if (!RAIL.has(type)) return "bus";
+  return METRO.has(type) ? "metro" : "train";
+}
+
+/** Which stops a step passes ("bus" | "metro" | "rail"), or null (ferry, cable car, walking...). */
+export function stopKind(step) {
+  const type = step?.transit?.vehicleType || "";
+  if (BUS.has(type)) return "bus";
+  if (METRO.has(type)) return "metro";
+  if (RAIL.has(type)) return "rail";
+  return null;
+}
+
+/** "Stop J", "Stand 7" or "" (compass words like "N-Bound" and "opp" aren't shown). */
+export function stopLabel(stop) {
+  const ind = (stop?.indicator || "").trim();
+  if (/^[A-Z0-9]{1,3}$/i.test(ind)) return `Stop ${ind.toUpperCase()}`;
+  if (/^(stop|stand|bay)\s+\S+$/i.test(ind)) return ind.charAt(0).toUpperCase() + ind.slice(1);
+  return "";
+}
+
 export function distanceToPath(point, path) {
   if (!path.length) return Infinity;
   if (path.length === 1) return distanceMeters(point, path[0]);

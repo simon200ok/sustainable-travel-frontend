@@ -4,7 +4,7 @@ import PrivacyChoices from '../components/PrivacyChoices';
 import './Privacy.css';
 
 // Update when the notice changes
-const LAST_UPDATED = '18 October 2026';
+const LAST_UPDATED = '30 October 2026';
 
 export default function Privacy() {
   const { hash } = useLocation();
@@ -55,6 +55,14 @@ export default function Privacy() {
             and does not store your location. To find live train platforms, the station's location is sent to our server,
             not yours. To show live buses and trains, the app sends our server the area of the map you're looking at; it
             isn't stored.
+          </p>
+          <p>
+            During a trip, the app sends our server the route line of the bus, Metro or train you're on (from your
+            journey plan, not your GPS position) to get the stops along it. Working out which stop you're at happens on
+            your device. While you walk, your approximate position is sent to find the nearest stops; it isn't stored.
+            When you search for a bus, the route number and your approximate area (or the middle of the map) are sent to
+            our server to find buses nearby; they aren't stored. A "share this bus" link contains the bus, never your
+            location.
           </p>
 
           <h2>Your phone's compass</h2>
@@ -158,6 +166,10 @@ export default function Privacy() {
             <li>
               <strong>National Rail Enquiries</strong>: live train platforms, times and train positions. Our server
               fetches these; your browser doesn't contact it.
+            </li>
+            <li>
+              <strong>NaPTAN</strong> (Department for Transport): the list of bus stops and stations. Our server downloads
+              it once a week; nothing about you is sent.
             </li>
             <li>
               <strong>Vercel, Render and Neon</strong>: host the website, the server and its database. The server and

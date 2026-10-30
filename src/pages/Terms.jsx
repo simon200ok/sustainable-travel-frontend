@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import './Privacy.css';
 
 // Update when the terms change (and say what changed at the top of the page if it matters to users)
-const LAST_UPDATED = '18 October 2026';
+const LAST_UPDATED = '30 October 2026';
 
 export default function Terms() {
   return (
@@ -76,8 +76,10 @@ export default function Terms() {
             <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a>.
             The Live Map uses map data from{' '}
             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>{' '}
-            contributors. Live bus data comes from the Bus Open Data Service (Open Government Licence v3.0), and train
-            information is powered by National Rail Enquiries. Links to other websites are for convenience; we're not
+            contributors. Live bus data comes from the Bus Open Data Service and stop data from NaPTAN (both Department
+            for Transport, Open Government Licence v3.0), and train information is powered by National Rail Enquiries.
+            The stops shown during a trip are the stops along the route; a bus or train may not stop at every one, and
+            positions without a GPS signal are estimates. Links to other websites are for convenience; we're not
             responsible for their content.
           </p>
           <p>

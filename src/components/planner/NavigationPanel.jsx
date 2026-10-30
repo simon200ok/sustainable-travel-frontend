@@ -4,6 +4,7 @@ import { describeStep } from "../../lib/navigation";
 import { speak, speechSupported } from "../../lib/speech";
 import LocationNotice from "../LocationNotice";
 import PlatformInfo from "./PlatformInfo";
+import { NearbyStops, RideStops } from "./RideStops";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const MANEUVER_ICON = {
@@ -22,7 +23,7 @@ export const MANEUVER_ICON = {
 };
 
 // Guidance runs in ActiveNavigation (so it continues on every page); this panel only shows it
-export default function NavigationPanel({ option, destination, position, locationError, onRetryLocation, nav, voiceOn, onToggleVoice, onExit, impact }) {
+export default function NavigationPanel({ option, destination, position, locationError, onRetryLocation, nav, ride, nearby, voiceOn, onToggleVoice, onExit, impact }) {
   const [showAll, setShowAll] = useState(false);
   // Looking at another step (Previous / Next / the step list) never moves live guidance,
   // which keeps tracking where you really are; "Back to current step" returns to it
@@ -129,11 +130,15 @@ export default function NavigationPanel({ option, destination, position, locatio
                   {step.transit.agency && `${step.transit.stopCount ? " · " : ""}${step.transit.agency}`}
                 </p>
                 <PlatformInfo step={step} />
+                {!viewing && <RideStops ride={ride} />}
               </>
             ) : (
-              <p className="nav-distance">
-                {!viewing && nav.distanceToStepEnd != null ? `${formatDistance(nav.distanceToStepEnd)} to go` : formatDistance(step.distanceMeters)}
-              </p>
+              <>
+                <p className="nav-distance">
+                  {!viewing && nav.distanceToStepEnd != null ? `${formatDistance(nav.distanceToStepEnd)} to go` : formatDistance(step.distanceMeters)}
+                </p>
+                {!viewing && <NearbyStops nearby={nearby} />}
+              </>
             )}
           </div>
         </div>

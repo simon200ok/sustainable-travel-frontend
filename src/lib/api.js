@@ -106,6 +106,35 @@ export function getPlatform({ lat, lng, depart, to }) {
   return request(`/rail/platform?${params}`, { cacheMs: 50_000, timeoutMs: 12_000 });
 }
 
+// The stops a bus / Metro / train leg passes, in order (UK stop list, NaPTAN). kind: bus | metro | rail
+export const getStopsAlong = (step, kind) =>
+  request("/stops/along", {
+    method: "POST",
+    body: {
+      polyline: step.polyline,
+      kind,
+      stopCount: step.transit?.stopCount || null,
+      departureStop: step.transit?.departureStop?.slice(0, 120) || null,
+      arrivalStop: step.transit?.arrivalStop?.slice(0, 120) || null,
+    },
+    cacheMs: 6 * 3_600_000,
+    timeoutMs: 15_000,
+  });
+
+// The nearest bus stops / stations. heading: only bus stops facing that way (for a moving bus)
+export function getStopsNear({ lat, lng, radius = 400, kind, heading, limit = 5 }, { signal } = {}) {
+  const params = new URLSearchParams({ lat: lat.toFixed(5), lng: lng.toFixed(5), radius: String(radius), limit: String(limit) });
+  if (kind) params.set("kind", kind);
+  if (Number.isFinite(heading)) params.set("heading", String(Math.round(((heading % 360) + 360) % 360)));
+  return request(`/stops/near?${params}`, { cacheMs: 60_000, timeoutMs: 10_000, signal });
+}
+
+// Live buses on one route near a place (nearest first). Also used to keep following one bus.
+export function searchBuses(route, near, { signal } = {}) {
+  const params = new URLSearchParams({ route, lat: near.lat.toFixed(3), lng: near.lng.toFixed(3) });
+  return request(`/live/search?${params}`, { cacheMs: 8_000, timeoutMs: 15_000, signal });
+}
+
 // Anonymous visitor counting (see lib/usage.js)
 export const recordVisit = (visit) => request("/usage/visit", { method: "POST", body: visit, timeoutMs: 8_000 });
 

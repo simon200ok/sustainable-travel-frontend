@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { planJourney } from "../lib/api";
 import { distanceMeters } from "../lib/geo";
 import { showSystemNotification } from "../lib/reminders";
-import { describeStep, distanceToPath, stepPath } from "../lib/navigation";
+import { describeStep, distanceToPath, stepPath, TYPICAL_SPEED, vehicleKind } from "../lib/navigation";
 import { speak, spokenDistance } from "../lib/speech";
 
 const ARRIVE_RADIUS_M = 35;
@@ -12,19 +12,10 @@ const REROUTE_COOLDOWN_MS = 45_000;
 const VEHICLE_SPEED = 4.5; // m/s (~16 km/h): faster than anyone walks, so you're on a vehicle
 const TRANSIT_TOLERANCE_M = 100; // timetable shapes are rough, and GPS on a bus wanders
 const AFTER_RIDE_GRACE_MS = 90_000; // time to get your bearings after stepping off
-// Typical speeds, used to time the "get off soon" alerts when GPS speed isn't available yet
-const TYPICAL_SPEED = { bus: 6, metro: 11, train: 18 };
-const RAIL = new Set(["SUBWAY", "METRO_RAIL", "LIGHT_RAIL", "TRAM", "MONORAIL", "RAIL", "HEAVY_RAIL", "COMMUTER_TRAIN", "HIGH_SPEED_TRAIN", "LONG_DISTANCE_TRAIN"]);
 
 function advanceRadius(step, accuracy) {
   if (step.transit) return 120; // you're on a vehicle: switch when near the alighting stop
   return Math.max(25, Math.min(accuracy || 0, 40));
-}
-
-function vehicleKind(step) {
-  const type = step.transit?.vehicleType || "";
-  if (!RAIL.has(type)) return "bus";
-  return ["SUBWAY", "METRO_RAIL", "LIGHT_RAIL", "TRAM", "MONORAIL"].includes(type) ? "metro" : "train";
 }
 
 function vibrate() {
@@ -274,6 +265,7 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
     arrived,
     alightAlert,
     eta,
+    speed,
   };
 }
 

@@ -417,3 +417,179 @@ button.legend-item {
     transition: none;
   }
 }
+
+/* ── Find a bus / track a bus ───────────────────────────────────────────── */
+.bus-finder {
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bus-finder-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bus-finder-form label {
+  font-weight: 700;
+}
+
+.bus-finder-form input {
+  flex: 1 1 140px;
+  min-width: 0;
+  max-width: 220px;
+  padding: 8px 10px;
+  font: inherit;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.bus-finder-form input::placeholder {
+  text-transform: none;
+}
+
+.bus-finder-note,
+.bus-finder-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.bus-finder-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--uos-red);
+}
+
+.bus-finder-count {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.bus-finder-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bus-finder-results li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.bus-finder-show {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bus-finder-show > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bus-finder-show strong {
+  overflow-wrap: anywhere;
+}
+
+.bus-finder-route {
+  flex: 0 0 auto;
+  min-width: 40px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: var(--uos-navy);
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+}
+
+:root[data-theme="dark"] .bus-finder-route {
+  background: var(--uos-navy-light);
+  color: #0A1020;
+}
+
+.bus-finder-track {
+  flex: 0 0 auto;
+}
+
+.bus-tracking {
+  border-color: var(--accent);
+  border-left-width: 5px;
+}
+
+.bus-tracking-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bus-tracking-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.bus-tracking-text > span {
+  color: var(--text-secondary);
+}
+
+.bus-tracking-text strong {
+  color: var(--text-primary);
+}
+
+.bus-tracking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bus-tracking-actions .btn.active {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.popup-track {
+  margin-top: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+/* Search results and the tracked bus stand out from other buses */
+.live-bus-found .live-bus-route {
+  background: var(--accent-strong);
+}
+
+.live-bus-tracked .live-bus-route {
+  background: var(--accent-strong);
+  box-shadow: 0 0 0 4px rgba(245, 124, 0, 0.45);
+  font-size: 13px;
+}

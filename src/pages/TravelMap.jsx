@@ -1,5 +1,5 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Link } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -10,6 +10,8 @@ import { trainsStatusText, useAreaTrains } from '../hooks/useAreaTrains';
 import { getCurrentPosition, locationAlreadyAllowed, watchLocationPermission } from '../lib/geo';
 import { useLiveLocation } from '../hooks/useLiveLocation';
 import LocationNotice from '../components/LocationNotice';
+import BusFinder from '../components/BusFinder';
+import { useTrackedBus } from '../hooks/useTrackedBus';
 import MapGate from '../components/MapGate';
 import { readJSON, writeJSON } from '../lib/storage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -60,13 +62,14 @@ function createIcon(type) {
   });
 }
 
-function createBusIcon(bus, other = false) {
-  // Only letters and digits reach the HTML; bearing is numeric
+function createBusIcon(bus, other = false, variant = '') {
+  // Only letters and digits reach the HTML; bearing is numeric; variant is one of two fixed words
   const route = String(bus.route).replace(/[^0-9A-Za-z]/g, '').slice(0, 5);
   const rotation = Number.isFinite(bus.bearing) ? bus.bearing : null;
+  const extra = variant === 'found' ? ' live-bus-found' : variant === 'tracked' ? ' live-bus-tracked' : '';
   return L.divIcon({
     className: 'custom-marker live-bus-marker',
-    html: `<div class="live-bus${other ? ' live-bus-other' : ''}">${
+    html: `<div class="live-bus${other ? ' live-bus-other' : ''}${extra}">${
       rotation !== null ? `<span class="live-bus-arrow" style="transform:rotate(${rotation}deg)"></span>` : ''
     }<span class="live-bus-route">${route}</span></div>`,
     iconSize: [44, 44],
@@ -119,6 +122,33 @@ function ViewWatcher({ onView }) {
   }, [map, onView]);
   return null;
 }
+
+// Keeps the tracked bus in view; dragging the map stops following
+function FollowBus({ bus, following, onStop }) {
+  const map = useMap();
+  useEffect(() => {
+    if (following && bus) map.panTo([bus.lat, bus.lng], { animate: true });
+  }, [map, following, bus]);
+  useEffect(() => {
+    if (!following) return undefined;
+    map.on('dragstart', onStop);
+    return () => map.off('dragstart', onStop);
+  }, [map, following, onStop]);
+  return null;
+}
+
+// A shared "follow this bus" link: /map?route=20&op=GNEL&bus=5370&at=54.906,-1.385
+function sharedBus(params) {
+  const route = (params.get('route') || '').toUpperCase();
+  const op = params.get('op') || '';
+  const bus = params.get('bus') || '';
+  const [lat, lng] = (params.get('at') || '').split(',').map(Number);
+  if (!/^[A-Z0-9]{1,6}$/.test(route) || !/^[A-Za-z0-9]{1,8}$/.test(op) || !/^[A-Za-z0-9_.-]{1,30}$/.test(bus)) return null;
+  if (!(lat >= 49.8 && lat <= 60.95 && lng >= -8.7 && lng <= 1.8)) return null;
+  return { route, operatorRef: op, vehicleRef: bus, lat, lng };
+}
+
+const busKey = (b) => `${b.operatorRef}-${b.vehicleRef}`;
 
 function createMeIcon() {
   return L.divIcon({
@@ -175,7 +205,13 @@ function useLiveBuses(enabled) {
 export default function TravelMap() {
   const { data: locations, loading, error } = useAsyncData(getLocations, []);
   const [hidden, setHidden] = useState(() => new Set());
-  const [flyTarget, setFlyTarget] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tracked, setTracked] = useState(() => sharedBus(searchParams));
+  const [flyTarget, setFlyTarget] = useState(() => (tracked ? { center: [tracked.lat, tracked.lng], zoom: 16 } : null));
+  const [found, setFound] = useState(null); // bus search results { route, vehicles }
+  const [following, setFollowing] = useState(!!tracked);
+  const busTrack = useTrackedBus(tracked);
+  const stopFollowing = useCallback(() => setFollowing(false), []);
   const showLive = !hidden.has('live');
   const { buses, status, online } = useLiveBuses(showLive);
   const [allBuses, setAllBuses] = useState(() => readJSON('uos-map-all-buses', false));
@@ -194,6 +230,34 @@ export default function TravelMap() {
   const [locateError, setLocateError] = useState('');
   const onView = useCallback((v) => setView(v), []);
   const meIcon = useMemo(createMeIcon, []);
+  const trackedKey = tracked ? busKey(tracked) : null;
+
+  // Search around you if location is on, otherwise around the middle of the map
+  const searchNear = live.position
+    ? { lat: live.position.lat, lng: live.position.lng, label: 'around you' }
+    : view
+      ? { lat: (view.bounds.north + view.bounds.south) / 2, lng: (view.bounds.east + view.bounds.west) / 2, label: 'around the middle of the map' }
+      : { lat: SUNDERLAND_CENTER[0], lng: SUNDERLAND_CENTER[1], label: 'around Sunderland' };
+
+  const trackBus = useCallback((bus) => {
+    if (!bus.vehicleRef) return;
+    setTracked({ route: bus.route, operatorRef: bus.operatorRef, vehicleRef: bus.vehicleRef, lat: bus.lat, lng: bus.lng });
+    setFollowing(true);
+    setFlyTarget({ center: [bus.lat, bus.lng], zoom: 16 });
+  }, []);
+
+  const stopTracking = () => {
+    setTracked(null);
+    setFollowing(false);
+    if (searchParams.has('bus')) setSearchParams({}, { replace: true });
+  };
+
+  const foundMarkers = useMemo(
+    () => (found && !tracked ? found.vehicles.filter((v) => v.vehicleRef).map((v) => ({ ...v, icon: createBusIcon(v, false, 'found') })) : []),
+    [found, tracked],
+  );
+  const trackedBus = busTrack.bus;
+  const trackedIcon = useMemo(() => (trackedBus ? createBusIcon(trackedBus, false, 'tracked') : null), [trackedBus]);
 
   // Already allowed (on the journey planner, a trip, or an earlier visit)? Show "you are here"
   // straight away without asking. Also notice if location is switched on while this page is open.
@@ -222,8 +286,12 @@ export default function TravelMap() {
   // The 700/701 layer already shows university buses, so don't draw them twice
   const universityRefs = useMemo(() => new Set(buses.map((b) => b.vehicleRef).filter(Boolean)), [buses]);
   const otherBuses = useMemo(
-    () => area.vehicles.filter((v) => !(showLive && universityRefs.has(v.vehicleRef))).slice(0, 500).map((v) => ({ ...v, icon: createBusIcon(v, true) })),
-    [area.vehicles, showLive, universityRefs],
+    () =>
+      area.vehicles
+        .filter((v) => !(showLive && universityRefs.has(v.vehicleRef)) && busKey(v) !== trackedKey)
+        .slice(0, 500)
+        .map((v) => ({ ...v, icon: createBusIcon(v, true) })),
+    [area.vehicles, showLive, universityRefs, trackedKey],
   );
 
   // "My location": uses the position the app already has; otherwise asks for it (the browser
@@ -281,7 +349,8 @@ export default function TravelMap() {
           <h1 className="page-title">Live Map</h1>
           <p className="page-desc">
             Campuses, cycle parking and transport links with the 700 and 701 university buses moving live.
-            Turn on <strong>All buses in view</strong> to see every bus moving anywhere in England.
+            Turn on <strong>All buses in view</strong> to see every bus moving anywhere in England, or use{' '}
+            <strong>Find a bus</strong> to search by route number and track one live.
           </p>
         </div>
       </section>
@@ -356,6 +425,19 @@ export default function TravelMap() {
               </span>
             )}
           </div>
+          <BusFinder
+            near={searchNear}
+            results={found}
+            onResults={setFound}
+            tracked={tracked}
+            tracking={busTrack}
+            onTrack={trackBus}
+            onStopTracking={stopTracking}
+            onShow={(bus) => setFlyTarget({ center: [bus.lat, bus.lng], zoom: 16 })}
+            following={following}
+            onFollow={setFollowing}
+          />
+
           {locateError && (
             <LocationNotice code={locateError} onRetry={showMyLocation} onDismiss={() => setLocateError('')} dismissLabel="Close" />
           )}
@@ -390,6 +472,7 @@ export default function TravelMap() {
                 />
                 <FlyTo target={flyTarget} />
                 <ViewWatcher onView={onView} />
+                <FollowBus bus={trackedBus} following={following && !!tracked} onStop={stopFollowing} />
                 {me && <Marker position={me} icon={meIcon} zIndexOffset={2000} title="You are here" />}
                 {allBuses &&
                   otherBuses.map((bus) => (
@@ -405,8 +488,13 @@ export default function TravelMap() {
                           <p>
                             {bus.origin && bus.destination ? `${bus.origin} → ${bus.destination}` : bus.destination ? `To ${bus.destination}` : 'Live bus'}
                             <br />
-                            Operator: {bus.operatorRef || 'unknown'} · updated {secondsAgo(bus.recordedAt)}
+                            Operator: {bus.operatorName || bus.operatorRef || 'unknown'} · updated {secondsAgo(bus.recordedAt)}
                           </p>
+                          {bus.vehicleRef && (
+                            <button type="button" className="btn btn-primary popup-track" onClick={() => trackBus(bus)}>
+                              Track this bus
+                            </button>
+                          )}
                         </div>
                       </Popup>
                     </Marker>
@@ -456,8 +544,31 @@ export default function TravelMap() {
                     </Popup>
                   </Marker>
                 ))}
+                {foundMarkers.map((bus) => (
+                  <Marker key={`f-${busKey(bus)}`} position={[bus.lat, bus.lng]} icon={bus.icon} zIndexOffset={1500}>
+                    <Popup>
+                      <div className="map-popup">
+                        <h3>Bus {bus.route}</h3>
+                        <p>
+                          {bus.destination ? `To ${bus.destination}` : 'Live bus'}
+                          <br />
+                          {bus.operatorName || bus.operatorRef} · updated {secondsAgo(bus.recordedAt)}
+                        </p>
+                        <button type="button" className="btn btn-primary popup-track" onClick={() => trackBus(bus)}>
+                          Track this bus
+                        </button>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+                {tracked && busTrack.trail.length > 1 && (
+                  <Polyline positions={busTrack.trail.map((p) => [p.lat, p.lng])} pathOptions={{ color: '#F57C00', weight: 5, opacity: 0.8 }} />
+                )}
+                {trackedBus && (
+                  <Marker position={[trackedBus.lat, trackedBus.lng]} icon={trackedIcon} zIndexOffset={3000} title={`Tracking bus ${trackedBus.route}`} />
+                )}
                 {showLive &&
-                  buses.map((bus) => (
+                  buses.filter((bus) => busKey(bus) !== trackedKey).map((bus) => (
                     <Marker
                       key={bus.vehicleRef || `${bus.route}-${bus.lat}`}
                       position={[bus.lat, bus.lng]}
@@ -472,6 +583,11 @@ export default function TravelMap() {
                             <br />
                             Position updated {secondsAgo(bus.recordedAt)}
                           </p>
+                          {bus.vehicleRef && (
+                            <button type="button" className="btn btn-primary popup-track" onClick={() => trackBus(bus)}>
+                              Track this bus
+                            </button>
+                          )}
                         </div>
                       </Popup>
                     </Marker>

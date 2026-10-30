@@ -1404,3 +1404,219 @@ body.has-nav-bar {
   font-weight: 700;
   box-shadow: var(--shadow-sm);
 }
+
+/* ── Stops on the bus / Metro / train you're riding ─────────────────────── */
+/* Shown inside the current-step card, which is dark in both themes */
+.ride-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.ride-stops {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ride-now {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--accent);
+}
+
+.ride-now p {
+  margin: 0;
+}
+
+.ride-label {
+  display: inline-block;
+  min-width: 56px;
+  padding: 1px 6px;
+  margin-right: 4px;
+  border-radius: 4px;
+  background: var(--accent-strong);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.ride-label-next {
+  background: #0069FA;
+}
+
+:root[data-theme="dark"] .ride-label-next {
+  background: #5B9BFF;
+  color: #0A1020;
+}
+
+.ride-when,
+.ride-togo,
+.ride-note,
+.ride-credit {
+  font-size: 0.85rem;
+  color: rgba(243, 248, 250, 0.85);
+}
+
+.ride-togo {
+  font-weight: 700;
+  color: var(--text-on-dark);
+}
+
+.ride-note,
+.ride-credit {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.nav-current .ride-toggle {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  color: var(--uos-orange-light);
+}
+
+.ride-stop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.ride-stop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 2px;
+}
+
+/* The line joining the stops */
+.ride-stop:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 18px;
+  bottom: -6px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ride-dot {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #5B9BFF;
+  background: var(--uos-grey-black);
+}
+
+.ride-stop-done {
+  color: rgba(243, 248, 250, 0.75);
+}
+
+.ride-stop-done .ride-dot {
+  border-color: #66BB6A;
+  background: #66BB6A;
+}
+
+.ride-stop-now {
+  font-weight: 700;
+}
+
+.ride-stop-now .ride-dot {
+  width: 14px;
+  height: 14px;
+  margin-left: -1px;
+  border-color: #fff;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(245, 124, 0, 0.45);
+}
+
+.ride-stop-next {
+  font-weight: 600;
+}
+
+.ride-stop-next .ride-dot {
+  background: #5B9BFF;
+}
+
+.ride-tag {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ride-tag-off {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+}
+
+.ride-nearby {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: rgba(243, 248, 250, 0.85);
+}
+
+.ride-nearby strong {
+  color: var(--text-on-dark);
+}
+
+/* Stop markers on the trip map */
+.map-stop {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--uos-navy-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.map-stop-done {
+  background: #8D99AE;
+  width: 9px;
+  height: 9px;
+}
+
+.map-stop-next {
+  width: 16px;
+  height: 16px;
+  background: var(--uos-navy);
+}
+
+.map-stop-now {
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(245, 124, 0, 0.35);
+}
+
+.map-stop-alight {
+  border-color: var(--accent-strong);
+  border-width: 3px;
+}

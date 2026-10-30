@@ -264,6 +264,7 @@ function PlannerMapInner({
   theme = "light",
   mapKey = "planner",
   ridingLine = null,
+  rideStops = null,
 }) {
   const containerRef = useRef(null);
   const inView = useInView(containerRef);
@@ -375,6 +376,19 @@ function PlannerMapInner({
 
             {option?.steps?.map((step, i) => (
               <Polyline key={`${option.mode}-${i}`} path={stepPath(step)} {...stepStyle(step, option.mode)} />
+            ))}
+
+            {/* The stops of the bus / Metro / train you're on: passed, where you are, next, still to come */}
+            {rideStops?.map((s, i) => (
+              <AdvancedMarker
+                key={`stop-${s.atco || s.role}-${i}`}
+                position={{ lat: s.lat, lng: s.lng }}
+                title={s.state === "now" ? `Now at ${s.name}` : s.state === "next" ? `Next: ${s.name}` : s.name}
+                zIndex={s.state === "now" || s.state === "next" ? 450 : 300}
+                anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+              >
+                <span className={`map-stop map-stop-${s.state}${s.role ? ` map-stop-${s.role}` : ""}`} aria-hidden="true" />
+              </AdvancedMarker>
             ))}
 
             {origin && (

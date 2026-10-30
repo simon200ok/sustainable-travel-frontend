@@ -3,12 +3,14 @@ import { useJourney } from "../../context/JourneyContext";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
 import { useImpact } from "../../hooks/useImpact";
 import { useLiveLocation } from "../../hooks/useLiveLocation";
+import { useNearbyStops } from "../../hooks/useNearbyStops";
+import { useRideStops } from "../../hooks/useRideStops";
 import { useTheme } from "../../hooks/useTheme";
 import { useTurnByTurn } from "../../hooks/useTurnByTurn";
 import { useWakeLock } from "../../hooks/useWakeLock";
 import { getLocations } from "../../lib/api";
 import { formatDistance, MODE_META, vehicleIcon } from "../../lib/format";
-import { describeStep } from "../../lib/navigation";
+import { describeStep, stopLabel } from "../../lib/navigation";
 import { speak, speechSupported, stopSpeaking } from "../../lib/speech";
 import NavigationPanel, { MANEUVER_ICON } from "./NavigationPanel";
 import PlannerMap from "./PlannerMap";
@@ -58,6 +60,26 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
     onIndexChange,
   });
   useWakeLock(!nav.arrived);
+  const ride = useRideStops(nav.arrived ? null : nav.step, live.position, nav.speed);
+  const nearby = useNearbyStops(live.position, !nav.arrived && !!nav.step && !nav.step.transit);
+
+  // Riding: say the next stop as it changes (like the announcements on a bus), once moving
+  const announcedStop = useRef("");
+  const nextStop = ride.status === "ok" && ride.started && !ride.estimated ? ride.next : null;
+  useEffect(() => {
+    if (!nextStop) return;
+    const key = `${nav.index}:${nextStop.atco || nextStop.role}`;
+    if (announcedStop.current === key) return;
+    announcedStop.current = key;
+    if (!voiceOn) return;
+    const word = ride.kind === "bus" ? "stop" : "station";
+    const label = stopLabel(nextStop);
+    let text = `Next ${word}: ${nextStop.name}${label ? `, ${label}` : ""}.`;
+    if (nextStop.role === "alight") text += ` This is your ${word}.`;
+    else if (ride.toGo <= 3) text += ` ${ride.exact ? "" : "About "}${ride.toGo} ${word}s to go.`;
+    speak(text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextStop?.atco, nextStop?.role, nav.index]);
 
   useEffect(() => stopSpeaking, []);
 
@@ -154,7 +176,13 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
           <span className="nav-bar-text">
             <strong>{step ? describeStep(step) : `${option.label} to ${destination.label}`}</strong>
             <span>
-              {nav.alightAlert ? `${nav.alightAlert} · ` : nav.distanceToStepEnd != null && !step?.transit ? `${formatDistance(nav.distanceToStepEnd)} · ` : ""}
+              {nav.alightAlert
+                ? `${nav.alightAlert} · `
+                : ride.next && ride.started
+                  ? `Next: ${ride.next.name}${ride.toGo > 1 ? `, ${ride.exact ? "" : "about "}${ride.toGo} ${ride.kind === "bus" ? "stops" : "stations"} to go` : ""} · `
+                  : nav.distanceToStepEnd != null && !step?.transit
+                    ? `${formatDistance(nav.distanceToStepEnd)} · `
+                    : ""}
               {option.label} to {destination.label}
             </span>
           </span>
@@ -197,6 +225,7 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
             setPannedAt(Date.now());
           }}
           cycleParks={cycleParks}
+          rideStops={ride.status === "ok" ? ride.stops : null}
           theme={theme}
         />
         {!following && (
@@ -212,6 +241,8 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
         locationError={live.error}
         onRetryLocation={retryLocation}
         nav={nav}
+        ride={ride}
+        nearby={nearby}
         voiceOn={voiceOn}
         onToggleVoice={toggleVoice}
         onExit={exit}
