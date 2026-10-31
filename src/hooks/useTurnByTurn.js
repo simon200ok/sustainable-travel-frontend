@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { planJourney } from "../lib/api";
 import { distanceMeters } from "../lib/geo";
 import { showSystemNotification } from "../lib/reminders";
-import { describeStep, distanceToPath, stepPath, TYPICAL_SPEED, vehicleKind } from "../lib/navigation";
+import { alongPath, describeStep, distanceToPath, stepPath, TYPICAL_SPEED, vehicleKind } from "../lib/navigation";
 import { speak, spokenDistance } from "../lib/speech";
 
 const ARRIVE_RADIUS_M = 35;
@@ -12,6 +12,11 @@ const REROUTE_COOLDOWN_MS = 45_000;
 const VEHICLE_SPEED = 4.5; // m/s (~16 km/h): faster than anyone walks, so you're on a vehicle
 const TRANSIT_TOLERANCE_M = 100; // timetable shapes are rough, and GPS on a bus wanders
 const AFTER_RIDE_GRACE_MS = 90_000; // time to get your bearings after stepping off
+// "Get off soon" alerts: fastest each vehicle plausibly goes (m/s), the roughest GPS fix trusted,
+// and how far from the route line a fix can be and still say how far along you are
+const MAX_SPEED = { bus: 22, metro: 25, train: 56 };
+const ALERT_MAX_ACCURACY_M = 100;
+const ALERT_OFF_LINE_M = 250;
 
 function advanceRadius(step, accuracy) {
   if (step.transit) return 120; // you're on a vehicle: switch when near the alighting stop
@@ -180,19 +185,35 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
 
     // On a bus / Metro / train: warn about 3 minutes and 1 minute before the stop to get off at
     if (step.transit && step.end) {
-      const remaining = distanceMeters(position, step.end);
       const kind = vehicleKind(step);
       const typical = TYPICAL_SPEED[kind];
-      const secondsLeft = moving > 2 ? remaining / moving : null;
       const stop = step.transit.arrivalStop || "your stop";
       const bell = kind === "bus";
-      if ((secondsLeft != null && secondsLeft <= 70) || remaining <= typical * 55) {
-        setAlightAlert(`🔔 Get off at ${stop} in about 1 minute${bell ? " . Press the bell" : ""}`);
+      const now = Date.now();
+      const dep = Date.parse(step.transit.departureTime);
+      const arr = Date.parse(step.transit.arrivalTime);
+      // GPS "speeds" faster than the vehicle can go are jumps in the GPS, not movement
+      const v = moving > 2 ? Math.min(moving, MAX_SPEED[kind]) : null;
+      // Still waiting for it (it may not come for 20 minutes): no "get off" alerts yet
+      const waiting = Number.isFinite(dep) && now < dep - 60_000 && !(v > VEHICLE_SPEED);
+      // Distance still to ride along the route, not as the crow flies (a route can loop back
+      // close to your stop long before it gets there)
+      const where = alongPath(position, paths[index]);
+      const remaining = where.offset <= ALERT_OFF_LINE_M ? where.length - where.along : null;
+      // A rough fix (Wi-Fi or phone mast, hundreds of metres out) can land anywhere, even next to your stop
+      const gpsGood = remaining != null && (position.accuracy ?? 0) <= ALERT_MAX_ACCURACY_M;
+      // No good GPS (e.g. underground): fall back to the timetable, once it has left
+      const timetableLeft = !gpsGood && Number.isFinite(arr) && Number.isFinite(dep) && now >= dep ? (arr - now) / 1000 : null;
+      const secondsLeft = gpsGood && v ? remaining / v : timetableLeft;
+      const within = (seconds, metres) =>
+        !waiting && ((secondsLeft != null && secondsLeft <= seconds) || (gpsGood && remaining <= metres));
+      if (within(70, typical * 55)) {
+        setAlightAlert(`🔔 Get off at ${stop} in about 1 minute${bell ? ". Press the bell" : ""}`);
         say(`${index}:alight1`, `Get ready to get off. ${stop} is in about 1 minute.${bell ? " Press the bell now." : ""}`, {
           buzz: true,
           notify: `🔔 Get off at ${stop} in 1 minute`,
         });
-      } else if ((secondsLeft != null && secondsLeft <= 190) || remaining <= typical * 150) {
+      } else if (within(190, typical * 150)) {
         setAlightAlert(`🚏 Get off at ${stop} in about 3 minutes`);
         say(`${index}:alight3`, `In about 3 minutes, get off at ${stop}.${bell ? " Press the bell when you're close." : ""}`, {
           buzz: true,
@@ -249,7 +270,13 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
   }, [position]);
 
   const step = steps[index];
-  const distanceToStepEnd = position && step?.end ? distanceMeters(position, step.end) : null;
+  // Riding: distance left along the route (it may loop back); walking: straight to the end of the step
+  const along = position && step?.transit ? alongPath(position, paths[index]) : null;
+  const distanceToStepEnd = !position || !step?.end
+    ? null
+    : along && along.offset <= ALERT_OFF_LINE_M
+      ? along.length - along.along
+      : distanceMeters(position, step.end);
   const eta = useMemo(
     () => estimateArrival(steps, index, distanceToStepEnd, speed),
     [steps, index, distanceToStepEnd, speed],
@@ -287,7 +314,8 @@ export function estimateArrival(steps, index, distanceToStepEnd, speed, nowMs = 
       const ride = Number.isFinite(dep) && Number.isFinite(arr) && arr > dep ? arr - dep : planned;
       if (k === index) {
         // On board: use the real speed when we have it
-        t += speed > 2 && distanceToStepEnd != null ? (distanceToStepEnd / speed) * 1000 : ride * fraction;
+        const v = speed > 2 ? Math.min(speed, MAX_SPEED[vehicleKind(s)]) : null;
+        t += v && distanceToStepEnd != null ? (distanceToStepEnd / v) * 1000 : ride * fraction;
       } else {
         t = Math.max(t, Number.isFinite(dep) ? dep : t) + ride;
       }
