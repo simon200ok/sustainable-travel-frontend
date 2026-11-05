@@ -1620,3 +1620,7 @@ body.has-nav-bar {
   border-color: var(--accent-strong);
   border-width: 3px;
 }
+
+.ride-unavailable {
+  margin-top: 8px;
+}

@@ -42,6 +42,10 @@ export function useRideStops(step, position, speed) {
   const list = useMemo(() => {
     if (!key || data?.key !== key || data.failed) return null;
     const t = step.transit;
+    // Far fewer stops than the timetable says there are (e.g. an area whose stops aren't loaded
+    // yet): the list would jump straight to your stop, so show nothing rather than guess
+    const between = (t.stopCount || 0) - 1;
+    if (between >= 1 && data.stops.length < Math.ceil(between / 2)) return null;
     const start = t.departureStopLocation || step.start || path[0];
     const end = step.end || path[path.length - 1];
     const middle = data.stops
@@ -71,7 +75,7 @@ export function useRideStops(step, position, speed) {
   return useMemo(() => {
     if (!key) return { status: "none" };
     if (data?.key !== key) return { status: "loading", kind };
-    if (!list) return { status: "unavailable", kind };
+    if (!list) return { status: "unavailable", kind, reason: data.failed ? "error" : "incomplete" };
 
     let userAlong = null;
     let estimated = false;

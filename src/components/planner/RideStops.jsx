@@ -16,7 +16,12 @@ function inAbout(seconds) {
 /** On a bus / Metro / train: where you are among its stops, and the full list. */
 export function RideStops({ ride }) {
   const [open, setOpen] = useState(false);
-  if (!ride || ride.status === "none" || ride.status === "unavailable") return null;
+  if (!ride || ride.status === "none") return null;
+  if (ride.status === "unavailable") {
+    return ride.reason === "incomplete" ? (
+      <p className="ride-note ride-unavailable">Stop-by-stop details aren't available for this route yet.</p>
+    ) : null;
+  }
   if (ride.status === "loading") {
     return (
       <p className="ride-loading">
