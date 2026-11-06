@@ -211,6 +211,19 @@ button.legend-item {
   color: var(--uos-orange);
 }
 
+/* The place the map is showing: filled in the deeper UoS orange (white text passes AA contrast) */
+.campus-switch button.active,
+:root .campus-switch button.active:hover {
+  background: var(--accent-text);
+  color: #fff;
+}
+
+/* In dark mode the accent is the lighter orange, so navy text instead */
+:root[data-theme="dark"] .campus-switch button.active,
+:root[data-theme="dark"] .campus-switch button.active:hover {
+  color: var(--uos-navy);
+}
+
 .live-status {
   font-size: 0.88rem;
   color: var(--text-secondary);

@@ -152,7 +152,10 @@ export default function BusFinder({ near, results, onResults, tracked, tracking,
           </button>
         )}
       </form>
-      <p id="bus-finder-where" className="bus-finder-note">Searches about 40 km {near.label}.</p>
+      <p id="bus-finder-where" className="bus-finder-note">
+        Searches about 40 km {near.label}.
+        {near.label !== "around you" && <> Tap <strong>My location</strong> above to find buses around you.</>}
+      </p>
       {error && <p className="bus-finder-error" role="alert">⚠️ {error}</p>}
 
       {results && (

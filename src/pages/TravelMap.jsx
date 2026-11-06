@@ -7,7 +7,7 @@ import { getLiveBuses, getLocations } from '../lib/api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { LIVE_MIN_ZOOM, areaStatusText, useAreaVehicles } from '../hooks/useAreaVehicles';
 import { trainsStatusText, useAreaTrains } from '../hooks/useAreaTrains';
-import { getCurrentPosition, locationAlreadyAllowed, watchLocationPermission } from '../lib/geo';
+import { distanceMeters, getCurrentPosition, locationAlreadyAllowed, watchLocationPermission } from '../lib/geo';
 import { useLiveLocation } from '../hooks/useLiveLocation';
 import LocationNotice from '../components/LocationNotice';
 import BusFinder from '../components/BusFinder';
@@ -21,6 +21,30 @@ const SUNDERLAND_CENTER = [54.9069, -1.3838];
 const LONDON_CENTER = [51.5001, -0.0145];
 const DEFAULT_ZOOM = 14;
 const BUS_POLL_MS = 15_000;
+
+// The jump buttons, and how far from each city's centre the middle of the map can be for it to count as "on" it
+const PLACES = [
+  { id: 'sunderland', label: 'Sunderland', center: SUNDERLAND_CENTER, radius: 12_000 },
+  { id: 'london', label: 'London', center: LONDON_CENTER, radius: 25_000 },
+];
+// Zoomed out further than this, the map isn't "on" a city
+const PLACE_MIN_ZOOM = 10;
+
+// Which jump button matches what the map is showing: "me" when the map is centred on you,
+// otherwise the city the middle of the map is in, or null when it's somewhere else
+function placeOnMap(view, me) {
+  if (!view) return null;
+  const { north, south, east, west } = view.bounds;
+  const middle = { lat: (north + south) / 2, lng: (east + west) / 2 };
+  if (me) {
+    const height = distanceMeters({ lat: north, lng: middle.lng }, { lat: south, lng: middle.lng });
+    const width = distanceMeters({ lat: middle.lat, lng: west }, { lat: middle.lat, lng: east });
+    if (distanceMeters(middle, { lat: me[0], lng: me[1] }) <= Math.max(150, Math.min(height, width) * 0.15)) return 'me';
+  }
+  if (view.zoom < PLACE_MIN_ZOOM) return null;
+  const place = PLACES.find((p) => distanceMeters(middle, { lat: p.center[0], lng: p.center[1] }) <= p.radius);
+  return place ? place.id : null;
+}
 
 const iconColors = {
   campus: '#F57C00',
@@ -231,6 +255,7 @@ export default function TravelMap() {
   const onView = useCallback((v) => setView(v), []);
   const meIcon = useMemo(createMeIcon, []);
   const trackedKey = tracked ? busKey(tracked) : null;
+  const onMap = placeOnMap(view, me);
 
   // Search around you if location is on, otherwise around the middle of the map
   const searchNear = live.position
@@ -382,9 +407,25 @@ export default function TravelMap() {
               })}
             </div>
             <div className="campus-switch" role="group" aria-label="Jump to campus">
-              <button type="button" onClick={() => setFlyTarget({ center: [...SUNDERLAND_CENTER] })}>Sunderland</button>
-              <button type="button" onClick={() => setFlyTarget({ center: [...LONDON_CENTER] })}>London</button>
-              <button type="button" onClick={showMyLocation} disabled={locating} aria-label="Show my location on the map">
+              {PLACES.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={onMap === p.id ? 'active' : undefined}
+                  aria-current={onMap === p.id ? 'true' : undefined}
+                  onClick={() => setFlyTarget({ center: [...p.center] })}
+                >
+                  {p.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={onMap === 'me' ? 'active' : undefined}
+                aria-current={onMap === 'me' ? 'true' : undefined}
+                onClick={showMyLocation}
+                disabled={locating}
+                aria-label="Show my location on the map"
+              >
                 {locating ? <span className="spinner" /> : '◎'} My location
               </button>
             </div>
