@@ -23,7 +23,8 @@ export const MANEUVER_ICON = {
 };
 
 // Guidance runs in ActiveNavigation (so it continues on every page); this panel only shows it
-export default function NavigationPanel({ option, destination, position, locationError, onRetryLocation, nav, ride, nearby, voiceOn, onToggleVoice, onExit, impact }) {
+// savedKg: the whole journey's CO₂ saving (including any route before a re-route)
+export default function NavigationPanel({ option, savedKg = option.co2SavedKg, destination, position, locationError, onRetryLocation, nav, ride, nearby, voiceOn, onToggleVoice, onExit, impact }) {
   const [showAll, setShowAll] = useState(false);
   // Looking at another step (Previous / Next / the step list) never moves live guidance,
   // which keeps tracking where you really are; "Back to current step" returns to it
@@ -45,9 +46,9 @@ export default function NavigationPanel({ option, destination, position, locatio
       <div className="nav-panel nav-arrived" role="status">
         <div className="nav-arrived-emoji" aria-hidden="true">🎉</div>
         <h3>You've arrived at {destination.label}</h3>
-        {option.co2SavedKg > 0 ? (
+        {savedKg > 0 ? (
           <p>
-            Travelling by {option.label.toLowerCase()} saved <strong>{formatKg(option.co2SavedKg)} CO₂</strong> compared with driving alone.
+            Travelling by {option.label.toLowerCase()} saved <strong>{formatKg(savedKg)} CO₂</strong> compared with driving alone.
           </p>
         ) : (
           <p>Thanks for sharing the car. Fewer cars means cleaner air for Sunderland.</p>

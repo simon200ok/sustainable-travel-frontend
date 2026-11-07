@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useJourney } from "../../context/JourneyContext";
 import { useDeviceHeading } from "../../hooks/useDeviceHeading";
-import { useImpact } from "../../hooks/useImpact";
+import { combineParts, travelledPart, useImpact } from "../../hooks/useImpact";
 import { useLiveLocation } from "../../hooks/useLiveLocation";
 import { useNearbyStops } from "../../hooks/useNearbyStops";
 import { useRideStops } from "../../hooks/useRideStops";
@@ -39,15 +39,20 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
   const gpsHeading = live.position?.speed > 0.7 && Number.isFinite(live.position?.heading) ? live.position.heading : null;
   const heading = compass.heading ?? gpsHeading;
 
-  // A new route continues the same journey (same trip, CO₂ counted once at the end)
-  const onReroute = useCallback((next) => updateTrip({ option: next, stepIndex: 0 }), [updateTrip]);
+  // A new route continues the same journey (same trip, CO₂ counted once at the end). The part of
+  // the old route already travelled is kept, so the whole journey is counted, not just the new route.
+  const onReroute = useCallback(
+    (next, coveredM = 0) => updateTrip({ option: next, stepIndex: 0, parts: [...(trip.parts || []), travelledPart(option, coveredM)] }),
+    [option, trip.parts, updateTrip],
+  );
   const onIndexChange = useCallback((stepIndex) => updateTrip({ stepIndex }), [updateTrip]);
   const onArrive = useCallback(() => {
     if (recorded.current) return;
     recorded.current = true;
-    recordJourney(option); // CO₂ and streak counted once, on arrival
-    updateTrip({ arrived: true, minimised: false });
-  }, [option, recordJourney, updateTrip]);
+    const journey = combineParts([...(trip.parts || []), travelledPart(option, option.distanceMeters)]);
+    recordJourney(journey); // CO₂ and streak counted once, on arrival
+    updateTrip({ arrived: true, minimised: false, saved: journey });
+  }, [option, trip.parts, recordJourney, updateTrip]);
 
   const nav = useTurnByTurn({
     option,
@@ -236,6 +241,7 @@ function ActiveTrip({ trip, updateTrip, endTrip }) {
       </div>
       <NavigationPanel
         option={option}
+        savedKg={trip.saved?.co2SavedKg ?? option.co2SavedKg}
         destination={destination}
         position={live.position}
         locationError={live.error}

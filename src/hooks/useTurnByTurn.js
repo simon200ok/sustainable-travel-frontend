@@ -254,12 +254,19 @@ export function useTurnByTurn({ option, destination, position, voiceOn, onRerout
       lastReroute.current = Date.now();
       setRerouting(true);
       if (voice.current) speak("You're off the route. Updating your route.");
+      // How much of this route was travelled before leaving it: the steps already done, plus the
+      // part of the current step covered (so the trip's CO₂ counts the whole journey, not just the new route)
+      const current = steps[index];
+      const stepM = current?.distanceMeters || 0;
+      const leftInStep = current?.end ? distanceMeters(position, current.end) : stepM;
+      const coveredM = steps.slice(0, index).reduce((sum, s) => sum + (s.distanceMeters || 0), 0)
+        + Math.min(stepM, Math.max(0, stepM - leftInStep));
       planJourney({ label: "Your location", lat: position.lat, lng: position.lng }, destination)
         .then((result) => {
           // Same way of travelling if possible, otherwise the one that arrives first
           const same = result.options.find((o) => o.mode === option.mode)
             || [...result.options].sort((a, b) => Date.parse(a.arriveAt) - Date.parse(b.arriveAt))[0];
-          if (same) onReroute?.(same);
+          if (same) onReroute?.(same, coveredM);
         })
         .catch(() => {
           if (voice.current) speak("Couldn't get a new route. Follow the map back to the blue line.");

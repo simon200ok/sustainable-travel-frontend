@@ -34,6 +34,30 @@ export function computeStreak(journeys, now = new Date()) {
   return streak;
 }
 
+/** The part of a route option actually travelled: its CO₂ saving and calories in proportion to the distance. */
+export function travelledPart(option, metres) {
+  const total = option?.distanceMeters || 0;
+  const m = Math.max(0, Math.min(total, metres));
+  const share = total ? m / total : 0;
+  return { mode: option?.mode, distanceMeters: Math.round(m), co2SavedKg: (option?.co2SavedKg || 0) * share, kcal: Math.round((option?.kcal || 0) * share) };
+}
+
+/**
+ * One journey from its parts (the routes before each re-route, then the route that arrived).
+ * Counted as the way of travelling used for the longest distance.
+ */
+export function combineParts(parts) {
+  const byMode = {};
+  for (const p of parts) byMode[p.mode] = (byMode[p.mode] || 0) + p.distanceMeters;
+  const mode = Object.keys(byMode).sort((a, b) => byMode[b] - byMode[a])[0];
+  return {
+    mode,
+    distanceMeters: parts.reduce((s, p) => s + p.distanceMeters, 0),
+    co2SavedKg: Math.round(parts.reduce((s, p) => s + p.co2SavedKg, 0) * 1000) / 1000,
+    kcal: parts.reduce((s, p) => s + p.kcal, 0),
+  };
+}
+
 export function useImpact() {
   const journeys = useSyncExternalStore(subscribe, () => snapshot);
   const [openedAt] = useState(() => Date.now());
@@ -64,7 +88,7 @@ export function useImpact() {
     writeJSON(KEY, snapshot);
     listeners.forEach((l) => l());
     // Best effort: feeds the anonymous campus-wide counter
-    logGreenJourney(option.mode, option.distanceMeters).catch(() => {});
+    logGreenJourney(option.mode, option.distanceMeters, option.co2SavedKg).catch(() => {});
   }, []);
 
   return { journeys, stats, recordJourney };

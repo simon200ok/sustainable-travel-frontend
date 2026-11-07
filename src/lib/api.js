@@ -93,8 +93,12 @@ export const getLiveBuses = () =>
 
 export const getFares = () => request("/fares", { cacheMs: 300_000 });
 
-export const logGreenJourney = (mode, distanceMeters) =>
-  request("/impact/journeys", { method: "POST", body: { mode, distance_m: Math.round(distanceMeters) } });
+// The saving worked out by the planner (ride by ride); the server checks it's believable
+export const logGreenJourney = (mode, distanceMeters, co2SavedKg) =>
+  request("/impact/journeys", {
+    method: "POST",
+    body: { mode, distance_m: Math.round(distanceMeters), co2_saved_g: Math.min(100_000, Math.max(0, Math.round((co2SavedKg || 0) * 1000))) },
+  });
 
 // Train / Metro platform from National Rail's live boards (backend matches the service)
 export function getPlatform({ lat, lng, depart, to }) {
